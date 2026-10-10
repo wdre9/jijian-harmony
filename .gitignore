@@ -1,0 +1,34 @@
+# 依赖与构建产物
+oh_modules/
+.ohpm/
+.hvigor/
+build/
+.cxx/
+node_modules/
+*.hap
+*.app
+
+# IDE
+.idea/
+.hvigor/outputs/
+local.properties
+
+# 日志与临时
+*.log
+*.tmp
+*.swp
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 签名与密钥（严禁提交）
+*.p12
+*.cer
+*.p7b
+*.pem
+*.jks
+*.keystore
+keystore/
+signing/
+.sign/

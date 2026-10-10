@@ -1,0 +1,36 @@
+{
+  "app": {
+    // 签名配置：本地用 DevEco Studio 生成并配置；CI 由 scripts/ci-inject-signing.mjs 按 Secrets 动态注入（缺省不签名，产出未签名 HAP）
+    "signingConfigs": [],
+    "products": [
+      {
+        "name": "default",
+        "compatibleSdkVersion": "6.0.0(26)",
+        "runtimeOS": "HarmonyOS",
+        "buildMode": "release"
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug"
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

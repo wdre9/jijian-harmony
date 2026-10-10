@@ -1,0 +1,20 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "Piece-rate bookkeeping module"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "Piece-rate wage bookkeeping app"
+    },
+    {
+      "name": "app_name",
+      "value": "Jijian"
+    },
+    {
+      "name": "reason_save_stat_image",
+      "value": "Used to save statistics image to gallery"
+    }
+  ]
+}

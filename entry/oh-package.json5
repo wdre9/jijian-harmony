@@ -1,0 +1,9 @@
+{
+  "name": "entry",
+  "version": "0.1.0",
+  "description": "计件主模块",
+  "main": "",
+  "author": "wdre9",
+  "license": "MIT",
+  "dependencies": {}
+}

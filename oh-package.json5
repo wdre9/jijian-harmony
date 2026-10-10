@@ -1,0 +1,13 @@
+{
+  "modelVersion": "5.0.0",
+  "name": "jijian-harmony",
+  "version": "0.1.0",
+  "description": "计件工资记账 App - HarmonyOS NEXT 原生版（ArkTS/ArkUI）。Piece-rate wage bookkeeping, native HarmonyOS NEXT edition.",
+  "main": "",
+  "author": "wdre9",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "@ohos/hypium": "1.0.19"
+  }
+}

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# hvigorw - HarmonyOS 构建启动脚本（Linux/macOS）
+# 优先使用环境中的 DevEco Command Line Tools 提供的 hvigorw；
+# 否则转交工程内 hvigor/hvigor-wrapper.js（自动下载 hvigor）。
+set -e
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+# 1) 若 PATH 中存在 hvigorw（DevEco Command Line Tools 已配置），直接转发
+if command -v hvigorw >/dev/null 2>&1; then
+  exec hvigorw "$@"
+fi
+
+# 2) 转交工程内 wrapper
+HVIGOR_PATH="$DIR/hvigor/hvigor-wrapper.js"
+if [ ! -f "$HVIGOR_PATH" ]; then
+  echo "hvigor-wrapper.js not found: $HVIGOR_PATH" >&2
+  echo "请安装 DevEco Command Line Tools 或使用 DevEco Studio 打开工程同步。" >&2
+  exit 1
+fi
+exec node "$HVIGOR_PATH" "$@"

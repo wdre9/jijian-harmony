@@ -1,2 +1,93 @@
-# jijian-harmony
-计件工资记账 App - HarmonyOS NEXT 原生版（ArkTS/ArkUI）。Piece-rate wage bookkeeping, native HarmonyOS NEXT edition.
+# 计件 · Jijian (HarmonyOS NEXT)
+
+计件工资记账助手 —— HarmonyOS NEXT 原生应用（ArkTS / ArkUI），本地优先、离线可用、数据不出本机。
+
+Jijian (Piece-Rate Wage Bookkeeping) — a native HarmonyOS NEXT app built with ArkTS / ArkUI. Local-first, fully offline, all data stays on-device.
+
+> 本工程为 [jijian-app](https://github.com/wdre9/jijian-app) 的鸿蒙原生重写版（Android 版功能对齐），与 Android 版 JSON 备份文件互相兼容（备份包 `app` 字段为 `jijian-pwa`）。
+> This repository is a native HarmonyOS rewrite of [jijian-app](https://github.com/wdre9/jijian-app) with feature parity; JSON backup files are interchangeable with the Android version (backup package `app` field is `jijian-pwa`).
+
+---
+
+## 项目介绍 · Introduction
+
+「计件」面向计件制工厂/车间记账场景：工人按产品工序计件，班组长或老板快速录入当天产量，按日/周/月查看金额与件数，支持 OCR 拍照识别批量录入、CSV/Excel/JSON 导出、自动备份。
+
+Jijian targets piece-rate workshops: record daily output per product & process, view amount/quantity by day/week/month, OCR batch entry from photos, export to CSV/Excel/JSON, and automatic backups.
+
+## 功能特性 · Features
+
+| 中文 | English |
+| --- | --- |
+| 快速记账：产品工序选择、数量步进、单价、班次、工人、备注 | Quick entry: product/process picker, quantity stepper, price, shift, worker, note |
+| 首页概览：今日/本周/本月金额、件数、目标进度、最近记录 | Home overview: today/week/month amount & quantity, goal progress, recent records |
+| 明细查询：日期区间/产品/工人/班次筛选，按日分组，多选批量导出 | Details: filter by date/product/worker/shift, grouped by day, multi-select batch export |
+| 多维统计：多区间汇总、趋势折线图、产品占比饼图、工序/工人排行柱状图（Canvas 自绘） | Statistics: ranges, trend line chart, product pie chart, process/worker bar charts (custom Canvas) |
+| OCR 本地识别：相册选图，设备端 CoreVisionKit 识别，数据不出本机 | On-device OCR: pick photo from album, CoreVisionKit recognition locally |
+| 自动备份：保存后 24h 节流，滚动保留最近 14 份 JSON | Auto backup: 24h throttle after save, keeps latest 14 JSON backups |
+| 导出：CSV(带 BOM) / Excel(.xls) / JSON / 文本 / 统计长图 | Export: CSV(BOM) / Excel(.xls) / JSON / text / stats snapshot image |
+| 主题：浅色 / 深色 / 跟随系统 | Themes: light / dark / follow system |
+| 中英双文文档与自动化 CI 构建 | Bilingual docs & automated CI builds |
+
+## 技术栈 · Tech Stack
+
+- 语言/框架：ArkTS + ArkUI，Stage 模型，DevEco Studio 26（API 26 / HarmonyOS NEXT 6.0.0）
+- 数据：`@ohos.data.relationalStore`（关系型数据库，单文档语义 + schemaVersion 迁移链）
+- 偏好：`@ohos.data.preferences`（主题/目标/默认工人等 UI 偏好）
+- OCR：`@kit.CoreVisionKit`（textRecognition，本地识别）
+- 图片：`@ohos.file.picker`（PhotoViewPicker / documentViewPicker）、`@kit.ImageKit`
+- 图表：ArkUI `Canvas` 自绘 LineChart / BarChart / PieChart
+- 导出：手写 SpreadsheetML 2003 XML（.xls）；统计长图用 `componentSnapshot`
+
+## 本地构建 · Build Locally
+
+1. 安装 [DevEco Studio 26](https://developer.huawei.com/consumer/cn/deveco-studio/)（HarmonyOS NEXT 6.0.0 / API 26 SDK）
+2. 用 DevEco Studio 打开工程根目录（或命令行构建）：
+   - 命令行需配置 DevEco Command Line Tools（内含 hvigor / ohpm / SDK）
+   - Node.js 24+（工具自带或自行安装）
+3. 安装依赖并构建：
+   ```bash
+   ohpm install --all
+   hvigorw assembleHap --mode module -p product=default --no-daemon
+   ```
+4. HAP 产物位于 `entry/build/default/outputs/default/*.hap`
+
+## CI 构建说明 · CI Build
+
+`.github/workflows/build-harmony.yml` 在以下时机自动构建：
+
+- push 到 `main`
+- 推送 `v*` 标签（同时创建 GitHub Release 并上传 HAP）
+- 手动触发（workflow_dispatch）
+
+首次运行前，请在仓库 **Settings → Secrets and variables → Actions** 添加：
+
+| Secret | 说明 |
+| --- | --- |
+| `HARMONY_CLT_URL` | DevEco Command Line Tools Linux x64 直链（华为开发者官网「搭建流水线」页面获取，需登录） |
+| `HARMONY_P12_BASE64` | 签名 keystore（.p12）的 Base64 |
+| `HARMONY_P12_PASSWORD` | keystore / key 密码 |
+| `HARMONY_PROFILE_BASE64` | 发布 Profile（.p7b）的 Base64 |
+| `HARMONY_CERT_BASE64` | 应用证书（.cer）的 Base64 |
+| `HARMONY_ALIAS` | 签名密钥别名 |
+
+签名 Secrets 未配置时，CI 会构建**未签名 HAP** 并在 Release 说明中标注，需本机用 DevEco Studio 或 `hap-sign-tool` 离线签名后安装。
+
+## 安装方式 · Installation
+
+- 真机：DevEco Studio 连接设备后 Run；或命令行 `hdc shell bm install -p xxx.hap`
+- 未签名 HAP：先用 DevEco Studio 配置签名（File → Project Structure → Signing Configs）或 `hap-sign-tool` 离线签名，再安装
+- 应用商店分发：请使用正式签名证书与 Profile 构建
+
+## 数据安全 · Data Security
+
+- 所有数据仅保存在本机应用沙箱（RelationalStore 关系型数据库 + 沙箱文件），**不联网、不上传、不收集任何个人信息**
+- OCR 识别在设备端完成，图片不离开设备
+- 卸载应用前请先在「我的 → 数据与导出」导出 JSON 备份
+- 自动备份位于应用沙箱 `files/计件自动备份/`，滚动保留最近 14 份
+
+All data is stored only in the local app sandbox (RelationalStore + sandbox files). No network, no upload, no personal data collection. OCR runs fully on-device. Export a JSON backup before uninstalling.
+
+## 开源协议 · License
+
+MIT
