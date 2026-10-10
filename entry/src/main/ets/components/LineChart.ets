@@ -2,14 +2,12 @@
  * Canvas 自绘折线趋势图（统计页：金额按日趋势）
  */
 import { TrendPoint } from '../model/Types'
-
-const BLUE: string = '#1989fa'
-const GRID: string = '#e5e5e5'
-const TEXT: string = '#666666'
+import { Theme } from '../common/Theme'
 
 @Component
 export struct LineChart {
   @Prop @Watch('onDataChange') points: TrendPoint[] = []
+  @Prop @Watch('onDataChange') dark: boolean = false
   private settings: RenderingContextSettings = new RenderingContextSettings(true)
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings)
   private readyFlag: boolean = false
@@ -39,6 +37,9 @@ export struct LineChart {
     if (pts.length === 0) {
       return
     }
+    const grid: string = Theme.grid()
+    const text: string = Theme.chartText()
+    const blue: string = Theme.blue()
     const padL: number = 40
     const padR: number = 10
     const padT: number = 14
@@ -55,9 +56,9 @@ export struct LineChart {
       maxV = 1
     }
     // 网格 + y 轴标签
-    ctx.strokeStyle = GRID
+    ctx.strokeStyle = grid
     ctx.lineWidth = 1
-    ctx.fillStyle = TEXT
+    ctx.fillStyle = text
     ctx.font = '10vp sans-serif'
     ctx.textAlign = 'right'
     ctx.textBaseline = 'middle'
@@ -71,7 +72,7 @@ export struct LineChart {
       ctx.fillText(String(Math.round(label)), padL - 6, y)
     }
     // 折线
-    ctx.strokeStyle = BLUE
+    ctx.strokeStyle = blue
     ctx.lineWidth = 2
     ctx.beginPath()
     for (let i = 0; i < pts.length; i++) {
@@ -85,7 +86,7 @@ export struct LineChart {
     }
     ctx.stroke()
     // 数据点 + x 轴日期标签
-    ctx.fillStyle = BLUE
+    ctx.fillStyle = blue
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
     const labelIdx: number[] = [0, Math.floor(pts.length / 2), pts.length - 1]

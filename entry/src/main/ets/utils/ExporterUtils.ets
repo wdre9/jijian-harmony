@@ -4,7 +4,8 @@
  * - Excel：手写 SpreadsheetML 2003 XML 生成 .xls（避免引入第三方库）
  */
 import { EnrichedRecord } from './StatsUtils'
-import { escapeCsvCell, priceText, qty } from './FormatUtils'
+import { escapeCsvCell, priceText, qty, round } from './FormatUtils'
+import { ymOf } from './DateUtils'
 
 /** 工作表数据 */
 export interface SheetData {
@@ -127,4 +128,213 @@ export function buildXls(sheets: SheetData[]): string {
   }
   body += '</Workbook>\n'
   return body
+}
+
+/* ----------------------------- 统计五表（Excel 导出） ----------------------------- */
+
+/** 产品汇总表：产品 / 规格 / 件数 / 金额（按金额降序） */
+export function productSummaryAoa(rows: EnrichedRecord[]): Array<Array<string | number>> {
+  const map: Map<string, { qty: number, amount: number, spec: string }> = new Map<string, { qty: number, amount: number, spec: string }>()
+  for (let i = 0; i < rows.length; i++) {
+    const r: EnrichedRecord = rows[i]
+    const key: string = r.productName
+    const cur: { qty: number, amount: number, spec: string } | undefined = map.get(key)
+    if (cur === undefined) {
+      map.set(key, { qty: r.quantity, amount: r.amount, spec: r.spec })
+    } else {
+      cur.qty += r.quantity
+      cur.amount += r.amount
+      if (!cur.spec && r.spec) {
+        cur.spec = r.spec
+      }
+    }
+  }
+  const keys: string[] = []
+  const iter = map.keys()
+  let k = iter.next()
+  while (!k.done) {
+    keys.push(k.value)
+    k = iter.next()
+  }
+  keys.sort((a, b) => (map.get(b)!.amount) - (map.get(a)!.amount))
+  const body: Array<Array<string | number>> = []
+  for (let i = 0; i < keys.length; i++) {
+    const c = map.get(keys[i])!
+    body.push([keys[i], c.spec, round(c.qty, 3), round(c.amount, 2)])
+  }
+  const out: Array<Array<string | number>> = [['产品', '规格', '件数', '金额(元)']]
+  for (let i = 0; i < body.length; i++) {
+    out.push(body[i])
+  }
+  return out
+}
+
+/** 工序汇总表：工序 / 件数 / 金额 */
+export function processSummaryAoa(rows: EnrichedRecord[]): Array<Array<string | number>> {
+  const map: Map<string, { qty: number, amount: number }> = new Map<string, { qty: number, amount: number }>()
+  for (let i = 0; i < rows.length; i++) {
+    const r: EnrichedRecord = rows[i]
+    const key: string = r.processName
+    const cur = map.get(key)
+    if (cur === undefined) {
+      map.set(key, { qty: r.quantity, amount: r.amount })
+    } else {
+      cur.qty += r.quantity
+      cur.amount += r.amount
+    }
+  }
+  const keys: string[] = []
+  const iter = map.keys()
+  let k = iter.next()
+  while (!k.done) {
+    keys.push(k.value)
+    k = iter.next()
+  }
+  keys.sort((a, b) => (map.get(b)!.amount) - (map.get(a)!.amount))
+  const body: Array<Array<string | number>> = []
+  for (let i = 0; i < keys.length; i++) {
+    const c = map.get(keys[i])!
+    body.push([keys[i], round(c.qty, 3), round(c.amount, 2)])
+  }
+  const out: Array<Array<string | number>> = [['工序', '件数', '金额(元)']]
+  for (let i = 0; i < body.length; i++) {
+    out.push(body[i])
+  }
+  return out
+}
+
+/** 工人汇总表：工人 / 件数 / 金额 */
+export function workerSummaryAoa(rows: EnrichedRecord[]): Array<Array<string | number>> {
+  const map: Map<string, { qty: number, amount: number }> = new Map<string, { qty: number, amount: number }>()
+  for (let i = 0; i < rows.length; i++) {
+    const r: EnrichedRecord = rows[i]
+    const key: string = r.worker || '未填'
+    const cur = map.get(key)
+    if (cur === undefined) {
+      map.set(key, { qty: r.quantity, amount: r.amount })
+    } else {
+      cur.qty += r.quantity
+      cur.amount += r.amount
+    }
+  }
+  const keys: string[] = []
+  const iter = map.keys()
+  let k = iter.next()
+  while (!k.done) {
+    keys.push(k.value)
+    k = iter.next()
+  }
+  keys.sort((a, b) => (map.get(b)!.amount) - (map.get(a)!.amount))
+  const body: Array<Array<string | number>> = []
+  for (let i = 0; i < keys.length; i++) {
+    const c = map.get(keys[i])!
+    body.push([keys[i], round(c.qty, 3), round(c.amount, 2)])
+  }
+  const out: Array<Array<string | number>> = [['工人', '件数', '金额(元)']]
+  for (let i = 0; i < body.length; i++) {
+    out.push(body[i])
+  }
+  return out
+}
+
+/** 日期汇总表：日期 / 笔数 / 件数 / 金额（升序） */
+export function daySummaryAoa(rows: EnrichedRecord[]): Array<Array<string | number>> {
+  const map: Map<string, { qty: number, amount: number, count: number }> = new Map<string, { qty: number, amount: number, count: number }>()
+  for (let i = 0; i < rows.length; i++) {
+    const r: EnrichedRecord = rows[i]
+    const key: string = r.date
+    const cur = map.get(key)
+    if (cur === undefined) {
+      map.set(key, { qty: r.quantity, amount: r.amount, count: 1 })
+    } else {
+      cur.qty += r.quantity
+      cur.amount += r.amount
+      cur.count += 1
+    }
+  }
+  const keys: string[] = []
+  const iter = map.keys()
+  let k = iter.next()
+  while (!k.done) {
+    keys.push(k.value)
+    k = iter.next()
+  }
+  keys.sort()
+  const body: Array<Array<string | number>> = []
+  for (let i = 0; i < keys.length; i++) {
+    const c = map.get(keys[i])!
+    body.push([keys[i], c.count, round(c.qty, 3), round(c.amount, 2)])
+  }
+  const out: Array<Array<string | number>> = [['日期', '笔数', '件数', '金额(元)']]
+  for (let i = 0; i < body.length; i++) {
+    out.push(body[i])
+  }
+  return out
+}
+
+/** 班次汇总表：班次 / 笔数 / 件数 / 金额 */
+export function shiftSummaryAoa(rows: EnrichedRecord[]): Array<Array<string | number>> {
+  const dayRows: EnrichedRecord[] = []
+  const nightRows: EnrichedRecord[] = []
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].shift === 'night') {
+      nightRows.push(rows[i])
+    } else {
+      dayRows.push(rows[i])
+    }
+  }
+  const agg = (list: EnrichedRecord[]): Array<string | number> => {
+    let q: number = 0
+    let a: number = 0
+    for (let i = 0; i < list.length; i++) {
+      q += list[i].quantity
+      a += list[i].amount
+    }
+    return [list.length, round(q, 3), round(a, 2)]
+  }
+  const out: Array<Array<string | number>> = [['班次', '笔数', '件数', '金额(元)']]
+  out.push(['白班'].concat(agg(dayRows)))
+  out.push(['夜班'].concat(agg(nightRows)))
+  return out
+}
+
+/** 按月汇总表：月份 / 笔数 / 件数 / 金额（升序） */
+export function monthSummaryAoa(rows: EnrichedRecord[], start: string, end: string): Array<Array<string | number>> {
+  const map: Map<string, { qty: number, amount: number, count: number }> = new Map<string, { qty: number, amount: number, count: number }>()
+  for (let i = 0; i < rows.length; i++) {
+    const r: EnrichedRecord = rows[i]
+    if (r.date < start || r.date > end) {
+      continue
+    }
+    const key: string = ymOf(r.date)
+    const cur = map.get(key)
+    if (cur === undefined) {
+      map.set(key, { qty: r.quantity, amount: r.amount, count: 1 })
+    } else {
+      cur.qty += r.quantity
+      cur.amount += r.amount
+      cur.count += 1
+    }
+  }
+  const cur: Date = new Date(`${start}T00:00:00`)
+  const endD: Date = new Date(`${end}T00:00:00`)
+  const p = (n: number): string => (n < 10 ? `0${n}` : String(n))
+  const out: Array<Array<string | number>> = [['月份', '笔数', '件数', '金额(元)']]
+  let y: number = cur.getFullYear()
+  let m: number = cur.getMonth()
+  const ey: number = endD.getFullYear()
+  const em: number = endD.getMonth()
+  while (y < ey || (y === ey && m <= em)) {
+    const ym: string = `${y}-${p(m + 1)}`
+    const c = map.get(ym)
+    if (c !== undefined) {
+      out.push([ym, c.count, round(c.qty, 3), round(c.amount, 2)])
+    }
+    m++
+    if (m > 11) {
+      m = 0
+      y++
+    }
+  }
+  return out
 }

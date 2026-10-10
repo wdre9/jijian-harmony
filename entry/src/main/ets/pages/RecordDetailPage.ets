@@ -5,9 +5,8 @@ import { router, promptAction } from '@kit.ArkUI'
 import { DataDoc } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import { money, qty } from '../utils/FormatUtils'
+import { Theme } from '../common/Theme'
 
-const BLUE: string = '#1989fa'
-const GRAY: string = '#969799'
 
 interface DetailParams {
   id: string
@@ -50,8 +49,8 @@ struct RecordDetailPage {
       title: '删除记录',
       message: '确定删除这条记录吗？',
       buttons: [
-        { text: '取消', color: GRAY },
-        { text: '删除', color: '#ee0a24' }
+        { text: '取消', color: Theme.sub() },
+        { text: '删除', color: Theme.red() }
       ]
     })
     if (res.index === 1) {
@@ -69,7 +68,7 @@ struct RecordDetailPage {
       Row() {
         Text('‹ 返回')
           .fontSize(15)
-          .fontColor(BLUE)
+          .fontColor(Theme.blue())
           .onClick(() => {
             router.back()
           })
@@ -80,7 +79,7 @@ struct RecordDetailPage {
         Blank()
         Text('编辑')
           .fontSize(15)
-          .fontColor(BLUE)
+          .fontColor(Theme.blue())
           .onClick(() => {
             this.goEdit()
           })
@@ -88,7 +87,7 @@ struct RecordDetailPage {
       .width('100%')
       .height(48)
       .padding({ left: 14, right: 14 })
-      .backgroundColor('#ffffff')
+      .backgroundColor(Theme.card())
 
       Scroll() {
         Column({ space: 10 }) {
@@ -97,14 +96,14 @@ struct RecordDetailPage {
             Text(money(this.record() ? this.record()!.amount : 0))
               .fontSize(30)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#f67a2e')
+              .fontColor(Theme.orange())
             Text(this.record() ? `${this.record()!.date}  ${this.record()!.shift === 'night' ? '夜班' : '白班'}` : '')
               .fontSize(13)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
           }
           .width('100%')
           .padding(20)
-          .backgroundColor('#fff7ec')
+          .backgroundColor(Theme.orangeBg())
           .borderRadius(12)
 
           // 信息行
@@ -112,55 +111,55 @@ struct RecordDetailPage {
             Row() {
               Text('产品')
                 .fontSize(13)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
                 .width(80)
               Text(this.record() ? this.productName(this.record()!.productId) : '')
                 .fontSize(15)
             }
             .width('100%')
             .padding(12)
-            Divider().color('#f2f3f5')
+            Divider().color(Theme.chip())
 
             Row() {
               Text('工序')
                 .fontSize(13)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
                 .width(80)
               Text(this.record() ? this.processName(this.record()!.processId) : '')
                 .fontSize(15)
             }
             .width('100%')
             .padding(12)
-            Divider().color('#f2f3f5')
+            Divider().color(Theme.chip())
 
             Row() {
               Text('数量')
                 .fontSize(13)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
                 .width(80)
               Text(this.record() ? qty(this.record()!.quantity) : '')
                 .fontSize(15)
             }
             .width('100%')
             .padding(12)
-            Divider().color('#f2f3f5')
+            Divider().color(Theme.chip())
 
             Row() {
               Text('单价(元)')
                 .fontSize(13)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
                 .width(80)
               Text(this.record() ? money(this.record()!.price) : '')
                 .fontSize(15)
             }
             .width('100%')
             .padding(12)
-            Divider().color('#f2f3f5')
+            Divider().color(Theme.chip())
 
             Row() {
               Text('金额(元)')
                 .fontSize(13)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
                 .width(80)
               Text(this.record() ? money(this.record()!.amount) : '')
                 .fontSize(15)
@@ -168,24 +167,24 @@ struct RecordDetailPage {
             }
             .width('100%')
             .padding(12)
-            Divider().color('#f2f3f5')
+            Divider().color(Theme.chip())
 
             Row() {
               Text('工人')
                 .fontSize(13)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
                 .width(80)
               Text(this.record() ? (this.record()!.worker || '未填') : '')
                 .fontSize(15)
             }
             .width('100%')
             .padding(12)
-            Divider().color('#f2f3f5')
+            Divider().color(Theme.chip())
 
             Row() {
               Text('备注')
                 .fontSize(13)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
                 .width(80)
               Text(this.record() ? (this.record()!.note || '无') : '')
                 .fontSize(15)
@@ -194,14 +193,14 @@ struct RecordDetailPage {
             .padding(12)
           }
           .width('100%')
-          .backgroundColor('#ffffff')
+          .backgroundColor(Theme.card())
           .borderRadius(12)
 
           Button('删除这条记录')
             .width('100%')
             .height(44)
-            .backgroundColor('#ffffff')
-            .fontColor('#ee0a24')
+            .backgroundColor(Theme.card())
+            .fontColor(Theme.red())
             .borderRadius(10)
             .onClick(() => {
               this.doDelete()
@@ -212,7 +211,7 @@ struct RecordDetailPage {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#f7f8fa')
+      .backgroundColor(Theme.bg())
     }
     .width('100%')
     .height('100%')

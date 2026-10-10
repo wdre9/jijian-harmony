@@ -3,12 +3,14 @@
  */
 import { ShareItem } from '../model/Types'
 import { money } from '../utils/FormatUtils'
+import { Theme } from '../common/Theme'
 
 const COLORS: string[] = ['#1989fa', '#36d399', '#f67a2e', '#ffc928', '#7d5bf5', '#fa4d4d', '#00b8c5', '#b3a4ff']
 
 @Component
 export struct PieChart {
   @Prop @Watch('onDataChange') items: ShareItem[] = []
+  @Prop @Watch('onDataChange') dark: boolean = false
   private settings: RenderingContextSettings = new RenderingContextSettings(true)
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings)
   private readyFlag: boolean = false
@@ -60,8 +62,8 @@ export struct PieChart {
       ctx.fill()
       startAngle += sweep
     }
-    // 中心文字：总额
-    ctx.fillStyle = '#333333'
+    // 中心文字：总额（深色下用浅色文字）
+    ctx.fillStyle = Theme.isDark() ? '#e8e8ec' : '#333333'
     ctx.font = '12vp sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'

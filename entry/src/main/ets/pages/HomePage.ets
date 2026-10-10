@@ -1,16 +1,13 @@
 /**
- * 记账 Tab：今日/本周/本月概览 + 目标进度 + 最近记录 + 快捷录入
+ * 记账 Tab：今日/本周/本月概览 + 目标进度 + 今日记录 + 最近记录 + 快捷记账弹层
  */
-import { router } from '@kit.ArkUI'
-import { DataDoc, PieceRecord } from '../model/Types'
+import { promptAction, router } from '@kit.ArkUI'
+import { DataDoc, PieceRecord, Process, Product } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import { EnrichedRecord, enrichRecords, sumAmount, sumQty } from '../utils/StatsUtils'
 import { todayStr, weekRangeOf } from '../utils/DateUtils'
-import { money, qty } from '../utils/FormatUtils'
-
-const BLUE: string = '#1989fa'
-const GRAY: string = '#969799'
-const CARD: string = '#ffffff'
+import { money, qty, round } from '../utils/FormatUtils'
+import { Theme } from '../common/Theme'
 
 @Component
 export struct HomePage {
@@ -23,6 +20,14 @@ export struct HomePage {
   }
   private store: AppStore = AppStore.getInstance()
 
+  @State showQuickSheet: boolean = false
+  @State quickProductId: string = ''
+  @State quickProcessId: string = ''
+  @State quickQty: string = '1'
+  @State quickPrice: string = '0'
+  @State quickWorker: string = ''
+  @State quickShift: string = 'day'
+
   /** 富化全部记录 */
   private enriched(): EnrichedRecord[] {
     return enrichRecords(this.doc.records, this.doc.products, this.doc.processes)
@@ -34,13 +39,19 @@ export struct HomePage {
   }
 
   private weekRecords(): EnrichedRecord[] {
-    const range: string[] = weekRangeOf(todayStr())
-    return this.enriched().filter((r: EnrichedRecord) => r.date >= range[0] && r.date <= range[1])
+    const range = weekRangeOf(todayStr())
+    return this.enriched().filter((r: EnrichedRecord) => r.date >= range.start && r.date <= range.end)
   }
 
   private monthRecords(): EnrichedRecord[] {
     const ym: string = todayStr().substring(0, 7)
     return this.enriched().filter((r: EnrichedRecord) => r.date.startsWith(ym))
+  }
+
+  private todayList(): EnrichedRecord[] {
+    const list: EnrichedRecord[] = this.todayRecords()
+    list.sort((a: EnrichedRecord, b: EnrichedRecord) => (a.createdAt > b.createdAt ? -1 : 1))
+    return list.slice(0, 3)
   }
 
   private recent(): EnrichedRecord[] {
@@ -55,11 +66,11 @@ export struct HomePage {
   }
 
   private goRecordEdit(): void {
-    router.pushUrl({ url: 'pages/RecordEditPage' })
+    // 完整记账走独立页；快捷记账走弹层
+    this.openQuick()
   }
 
   private goDetail(): void {
-    // 切换到明细 Tab
     this.onJumpDetail()
   }
 
@@ -67,12 +78,89 @@ export struct HomePage {
     router.pushUrl({ url: 'pages/RecordDetailPage', params: { id: id } })
   }
 
+  /** 打开快捷记账弹层并预填最近产品/工序/默认工人 */
+  private openQuick(): void {
+    const s = this.store.doc.settings
+    this.quickProductId = s.rememberLast && s.lastProductId ? s.lastProductId : ''
+    this.quickProcessId = s.rememberLast && s.lastProcessId ? s.lastProcessId : ''
+    this.quickWorker = s.defaultWorker
+    this.quickQty = '1'
+    this.quickPrice = '0'
+    this.quickShift = 'day'
+    this.syncQuickPrice()
+    this.showQuickSheet = true
+  }
+
+  private quickProducts(): Product[] {
+    return this.store.doc.products
+  }
+
+  private quickProcesses(): Process[] {
+    if (!this.quickProductId) {
+      return []
+    }
+    return this.store.doc.processes.filter((c: Process) => c.productId === this.quickProductId)
+  }
+
+  private quickWorkers(): string[] {
+    const names: string[] = []
+    for (let i = 0; i < this.store.doc.workers.length; i++) {
+      names.push(this.store.doc.workers[i].name)
+    }
+    return names
+  }
+
+  private syncQuickPrice(): void {
+    const c: Process | undefined = this.quickProcesses().find((x: Process) => x.id === this.quickProcessId)
+    if (c && (!this.quickPrice || parseFloat(this.quickPrice) <= 0)) {
+      this.quickPrice = String(c.price)
+    }
+  }
+
+  private quickAmount(): number {
+    const q: number = parseFloat(this.quickQty) || 0
+    const p: number = parseFloat(this.quickPrice) || 0
+    return round(q * p, 2)
+  }
+
+  private toast(msg: string): void {
+    promptAction.showToast({ message: msg, duration: 2000 })
+  }
+
+  /** 快捷保存：写入记录并刷新父级 doc */
+  private async quickSave(): Promise<void> {
+    if (!this.quickProductId) {
+      this.toast('请选择产品')
+      return
+    }
+    if (!this.quickProcessId) {
+      this.toast('请选择工序')
+      return
+    }
+    const q: number = parseFloat(this.quickQty) || 0
+    const p: number = parseFloat(this.quickPrice) || 0
+    if (!(q > 0)) {
+      this.toast('数量需大于 0')
+      return
+    }
+    if (!(p >= 0)) {
+      this.toast('单价不合法')
+      return
+    }
+    const d: DataDoc = await this.store.addRecord(
+      todayStr(), this.quickProductId, this.quickProcessId, q, p,
+      this.quickWorker.trim(), this.quickShift, '')
+    this.onDocChanged(d)
+    this.showQuickSheet = false
+    this.toast('已保存')
+  }
+
   @Builder
   statCard(label: string, amount: number, qtyVal: number, color: string) {
     Column() {
       Text(label)
         .fontSize(12)
-        .fontColor(GRAY)
+        .fontColor(Theme.sub())
       Text(money(amount))
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
@@ -80,13 +168,224 @@ export struct HomePage {
         .margin({ top: 6 })
       Text(`${qty(qtyVal)} 件`)
         .fontSize(11)
-        .fontColor(GRAY)
+        .fontColor(Theme.sub())
         .margin({ top: 4 })
     }
     .width('50%')
     .padding(14)
-    .backgroundColor(CARD)
+    .backgroundColor(Theme.card())
     .borderRadius(12)
+  }
+
+  @Builder
+  quickSheet() {
+    Column({ space: 10 }) {
+      Text('快捷记账')
+        .fontSize(16)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(Theme.text())
+        .padding({ top: 16 })
+
+      // 产品
+      Column({ space: 6 }) {
+        Text('产品')
+          .fontSize(12)
+          .fontColor(Theme.sub())
+        Scroll() {
+          Row({ space: 6 }) {
+            ForEach(this.quickProducts(), (p: Product) => {
+              Text(p.name)
+                .fontSize(13)
+                .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+                .backgroundColor(this.quickProductId === p.id ? Theme.blue() : Theme.chip())
+                .fontColor(this.quickProductId === p.id ? Theme.white() : Theme.text())
+                .borderRadius(12)
+                .onClick(() => {
+                  this.quickProductId = p.id
+                  this.quickProcessId = ''
+                  this.quickPrice = '0'
+                })
+            }, (p: Product) => p.id)
+          }
+        }
+        .scrollable(ScrollDirection.Horizontal)
+        .scrollBar(BarState.Off)
+        .width('100%')
+      }
+      .width('100%')
+      .alignItems(HorizontalAlign.Start)
+
+      // 工序
+      Column({ space: 6 }) {
+        Text('工序')
+          .fontSize(12)
+          .fontColor(Theme.sub())
+        Scroll() {
+          Row({ space: 6 }) {
+            ForEach(this.quickProcesses(), (c: Process) => {
+              Text(`${c.name} ${money(c.price)}`)
+                .fontSize(13)
+                .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+                .backgroundColor(this.quickProcessId === c.id ? Theme.blue() : Theme.chip())
+                .fontColor(this.quickProcessId === c.id ? Theme.white() : Theme.text())
+                .borderRadius(12)
+                .onClick(() => {
+                  this.quickProcessId = c.id
+                  this.quickPrice = String(c.price)
+                })
+            }, (c: Process) => c.id)
+          }
+        }
+        .scrollable(ScrollDirection.Horizontal)
+        .scrollBar(BarState.Off)
+        .width('100%')
+      }
+      .width('100%')
+      .alignItems(HorizontalAlign.Start)
+
+      // 数量 / 单价
+      Row({ space: 10 }) {
+        Column({ space: 4 }) {
+          Text('数量')
+            .fontSize(12)
+            .fontColor(Theme.sub())
+          Row({ space: 6 }) {
+            Button('-')
+              .width(30)
+              .height(30)
+              .fontSize(16)
+              .type(ButtonType.Circle)
+              .backgroundColor(Theme.line())
+              .fontColor(Theme.text())
+              .onClick(() => {
+                const v: number = (parseFloat(this.quickQty) || 1) - 1
+                this.quickQty = v > 0 ? String(v) : '1'
+              })
+            TextInput({ text: this.quickQty, placeholder: '数量' })
+              .width(64)
+              .height(30)
+              .fontSize(14)
+              .type(InputType.Normal)
+              .textAlign(TextAlign.Center)
+              .onChange((v: string) => {
+                this.quickQty = v
+              })
+            Button('+')
+              .width(30)
+              .height(30)
+              .fontSize(16)
+              .type(ButtonType.Circle)
+              .backgroundColor(Theme.weakBlue())
+              .fontColor(Theme.blue())
+              .onClick(() => {
+                const v: number = (parseFloat(this.quickQty) || 0) + 1
+                this.quickQty = String(v)
+              })
+          }
+        }
+        .alignItems(HorizontalAlign.Start)
+        .layoutWeight(1)
+
+        Column({ space: 4 }) {
+          Text('单价(元)')
+            .fontSize(12)
+            .fontColor(Theme.sub())
+          TextInput({ text: this.quickPrice, placeholder: '0.00' })
+            .width(86)
+            .height(30)
+            .fontSize(14)
+            .type(InputType.Normal)
+            .textAlign(TextAlign.Center)
+            .onChange((v: string) => {
+              this.quickPrice = v
+            })
+        }
+        .alignItems(HorizontalAlign.Start)
+
+        Column({ space: 4 }) {
+          Text('金额')
+            .fontSize(12)
+            .fontColor(Theme.sub())
+          Text(money(this.quickAmount()))
+            .fontSize(17)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(Theme.orange())
+        }
+        .alignItems(HorizontalAlign.End)
+      }
+      .width('100%')
+
+      // 班次
+      Row({ space: 8 }) {
+        Text('班次')
+          .fontSize(12)
+          .fontColor(Theme.sub())
+        Text('白班')
+          .fontSize(13)
+          .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+          .backgroundColor(this.quickShift === 'day' ? Theme.blue() : Theme.chip())
+          .fontColor(this.quickShift === 'day' ? Theme.white() : Theme.text())
+          .borderRadius(8)
+          .onClick(() => {
+            this.quickShift = 'day'
+          })
+        Text('夜班')
+          .fontSize(13)
+          .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+          .backgroundColor(this.quickShift === 'night' ? Theme.blue() : Theme.chip())
+          .fontColor(this.quickShift === 'night' ? Theme.white() : Theme.text())
+          .borderRadius(8)
+          .onClick(() => {
+            this.quickShift = 'night'
+          })
+        Blank()
+        Button('保存')
+          .type(ButtonType.Capsule)
+          .backgroundColor(Theme.blue())
+          .fontColor(Theme.white())
+          .fontSize(14)
+          .height(34)
+          .onClick(() => {
+            this.quickSave()
+          })
+      }
+      .width('100%')
+
+      // 工人快捷 chips
+      if (this.quickWorkers().length > 0) {
+        Column({ space: 6 }) {
+          Text('工人')
+            .fontSize(12)
+            .fontColor(Theme.sub())
+          Scroll() {
+            Row({ space: 6 }) {
+              ForEach(this.quickWorkers(), (w: string) => {
+                Text(w)
+                  .fontSize(12)
+                  .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                  .backgroundColor(this.quickWorker === w ? Theme.weakBlue() : Theme.chip())
+                  .fontColor(this.quickWorker === w ? Theme.blue() : Theme.text())
+                  .borderRadius(10)
+                  .onClick(() => {
+                    this.quickWorker = w
+                  })
+              }, (w: string) => w)
+            }
+          }
+          .scrollable(ScrollDirection.Horizontal)
+          .scrollBar(BarState.Off)
+          .width('100%')
+        }
+        .width('100%')
+        .alignItems(HorizontalAlign.Start)
+      }
+
+      Blank().height(16)
+    }
+    .width('100%')
+    .height('100%')
+    .padding({ left: 14, right: 14 })
+    .backgroundColor(Theme.card())
   }
 
   build() {
@@ -114,7 +413,7 @@ export struct HomePage {
           Button('记一笔')
             .type(ButtonType.Capsule)
             .backgroundColor('#ffffff')
-            .fontColor(BLUE)
+            .fontColor(Theme.blue())
             .fontSize(14)
             .height(36)
             .onClick(() => {
@@ -133,52 +432,108 @@ export struct HomePage {
           Text('目标进度')
             .fontSize(14)
             .fontWeight(FontWeight.Medium)
+            .fontColor(Theme.text())
           Row() {
             Text('今日目标')
               .fontSize(12)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
               .width(64)
             LinearProgress({ value: this.dayGoalPercent(), total: 100 })
               .width(120)
               .height(8)
-              .color(BLUE)
-              .backgroundColor('#ebedf0')
+              .color(Theme.blue())
+              .backgroundColor(Theme.line())
               .layoutWeight(1)
             Text(`${money(sumAmount(this.todayRecords()))}/${money(this.doc.settings.dailyGoal)}`)
               .fontSize(11)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
               .width(120)
               .textAlign(TextAlign.End)
           }
           Row() {
             Text('本月目标')
               .fontSize(12)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
               .width(64)
             LinearProgress({ value: this.monthGoalPercent(), total: 100 })
               .width(120)
               .height(8)
-              .color('#f67a2e')
-              .backgroundColor('#ebedf0')
+              .color(Theme.orange())
+              .backgroundColor(Theme.line())
               .layoutWeight(1)
             Text(`${money(sumAmount(this.monthRecords()))}/${money(this.doc.settings.monthlyGoal)}`)
               .fontSize(11)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
               .width(120)
               .textAlign(TextAlign.End)
           }
         }
         .width('100%')
         .padding(14)
-        .backgroundColor(CARD)
+        .backgroundColor(Theme.card())
         .borderRadius(12)
 
         // 本周 / 本月概览
         Row({ space: 12 }) {
-          this.statCard('本周', sumAmount(this.weekRecords()), sumQty(this.weekRecords()), BLUE)
-          this.statCard('本月', sumAmount(this.monthRecords()), sumQty(this.monthRecords()), '#f67a2e')
+          this.statCard('本周', sumAmount(this.weekRecords()), sumQty(this.weekRecords()), Theme.blue())
+          this.statCard('本月', sumAmount(this.monthRecords()), sumQty(this.monthRecords()), Theme.orange())
         }
         .width('100%')
+
+        // 今日记录
+        if (this.todayRecords().length > 0) {
+          Column() {
+            Row() {
+              Text('今日记录')
+                .fontSize(15)
+                .fontWeight(FontWeight.Medium)
+                .fontColor(Theme.text())
+              Blank()
+              Text('全部明细 ›')
+                .fontSize(12)
+                .fontColor(Theme.blue())
+                .onClick(() => {
+                  this.goDetail()
+                })
+            }
+            .width('100%')
+            .padding({ left: 14, right: 14, top: 14, bottom: 6 })
+
+            ForEach(this.todayList(), (r: EnrichedRecord) => {
+              Row({ space: 10 }) {
+                Column({ space: 2 }) {
+                  Text(`${r.productName} · ${r.processName}`)
+                    .fontSize(14)
+                    .fontColor(Theme.text())
+                  Text(`${r.shift === 'night' ? '夜班' : '白班'}  ${r.worker || '未填工人'}`)
+                    .fontSize(11)
+                    .fontColor(Theme.sub())
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+
+                Column({ space: 2 }) {
+                  Text(money(r.amount))
+                    .fontSize(15)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor(Theme.text())
+                  Text(`${qty(r.quantity)} 件 × ${money(r.price)}`)
+                    .fontSize(11)
+                    .fontColor(Theme.sub())
+                }
+                .alignItems(HorizontalAlign.End)
+              }
+              .width('100%')
+              .padding({ left: 14, right: 14, top: 10, bottom: 10 })
+              .onClick(() => {
+                this.goRecordDetail(r.id)
+              })
+            }, (r: EnrichedRecord) => r.id)
+          }
+          .width('100%')
+          .backgroundColor(Theme.card())
+          .borderRadius(12)
+        }
 
         // 最近记录
         Column() {
@@ -186,10 +541,11 @@ export struct HomePage {
             Text('最近记录')
               .fontSize(15)
               .fontWeight(FontWeight.Medium)
+              .fontColor(Theme.text())
             Blank()
             Text('全部明细 ›')
               .fontSize(12)
-              .fontColor(BLUE)
+              .fontColor(Theme.blue())
               .onClick(() => {
                 this.goDetail()
               })
@@ -202,10 +558,10 @@ export struct HomePage {
               Column({ space: 2 }) {
                 Text(`${r.productName} · ${r.processName}`)
                   .fontSize(14)
-                  .fontColor('#323233')
+                  .fontColor(Theme.text())
                 Text(`${r.date}  ${r.worker || '未填工人'}  ${r.shift === 'night' ? '夜班' : '白班'}`)
                   .fontSize(11)
-                  .fontColor(GRAY)
+                  .fontColor(Theme.sub())
               }
               .alignItems(HorizontalAlign.Start)
               .layoutWeight(1)
@@ -214,10 +570,10 @@ export struct HomePage {
                 Text(money(r.amount))
                   .fontSize(15)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#323233')
+                  .fontColor(Theme.text())
                 Text(`${qty(r.quantity)} 件 × ${money(r.price)}`)
                   .fontSize(11)
-                  .fontColor(GRAY)
+                  .fontColor(Theme.sub())
               }
               .alignItems(HorizontalAlign.End)
             }
@@ -232,17 +588,17 @@ export struct HomePage {
             Column({ space: 8 }) {
               Text('暂无记录')
                 .fontSize(14)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
               Text('点击右上角「记一笔」开始录入')
                 .fontSize(12)
-                .fontColor('#c8c9cc')
+                .fontColor(Theme.divider())
             }
             .width('100%')
             .padding({ top: 28, bottom: 28 })
           }
         }
         .width('100%')
-        .backgroundColor(CARD)
+        .backgroundColor(Theme.card())
         .borderRadius(12)
       }
       .width('100%')
@@ -251,7 +607,8 @@ export struct HomePage {
     .width('100%')
     .height('100%')
     .scrollBar(BarState.Off)
-    .backgroundColor('#f7f8fa')
+    .backgroundColor(Theme.bg())
+    .bindSheet(this.showQuickSheet, this.quickSheet(), { height: 520 })
   }
 
   private dayGoalPercent(): number {
@@ -272,3 +629,4 @@ export struct HomePage {
     return Math.min(v, 100)
   }
 }
+

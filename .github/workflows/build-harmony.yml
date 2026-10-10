@@ -81,9 +81,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jijian-harmony-hap
-          path: |
-            entry/build/default/outputs/default/*.hap
-            entry/build/default/outputs/default/*.app
+          path: entry/build/default/outputs/default/*.hap
 
       # tag 触发时发布 Release（未签名时明确标注）
       - name: Create GitHub Release

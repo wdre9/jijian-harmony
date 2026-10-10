@@ -6,9 +6,8 @@ import { DataDoc, PieceRecord, Process, Product } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import { money, qty } from '../utils/FormatUtils'
 import { EnrichedRecord, enrichRecords, sumAmount, sumQty } from '../utils/StatsUtils'
+import { Theme } from '../common/Theme'
 
-const BLUE: string = '#1989fa'
-const GRAY: string = '#969799'
 
 interface DetailParams {
   id: string
@@ -100,8 +99,8 @@ export struct ProductDetailPage {
       title: '删除产品',
       message: `删除「${p.name}」将同时删除其工序与相关记录，确定？`,
       buttons: [
-        { text: '取消', color: GRAY },
-        { text: '删除', color: '#ee0a24' }
+        { text: '取消', color: Theme.sub() },
+        { text: '删除', color: Theme.red() }
       ]
     })
     if (res.index === 1) {
@@ -142,7 +141,7 @@ export struct ProductDetailPage {
       Button('保存')
         .width('100%')
         .height(40)
-        .backgroundColor(BLUE)
+        .backgroundColor(Theme.blue())
         .onClick(() => {
           this.doSave()
         })
@@ -151,7 +150,7 @@ export struct ProductDetailPage {
     .width('100%')
     .height('100%')
     .padding(14)
-    .backgroundColor('#ffffff')
+    .backgroundColor(Theme.card())
   }
 
   build() {
@@ -159,7 +158,7 @@ export struct ProductDetailPage {
       Row() {
         Text('‹ 返回')
           .fontSize(15)
-          .fontColor(BLUE)
+          .fontColor(Theme.blue())
           .onClick(() => {
             router.back()
           })
@@ -170,7 +169,7 @@ export struct ProductDetailPage {
         Blank()
         Text('编辑')
           .fontSize(15)
-          .fontColor(BLUE)
+          .fontColor(Theme.blue())
           .onClick(() => {
             this.openEdit()
           })
@@ -178,7 +177,7 @@ export struct ProductDetailPage {
       .width('100%')
       .height(48)
       .padding({ left: 14, right: 14 })
-      .backgroundColor('#ffffff')
+      .backgroundColor(Theme.card())
 
       Scroll() {
         Column({ space: 10 }) {
@@ -192,20 +191,20 @@ export struct ProductDetailPage {
                 Text(this.product()!.spec)
                   .fontSize(12)
                   .padding({ left: 8, right: 8, top: 2, bottom: 2 })
-                  .backgroundColor('#e8f3ff')
-                  .fontColor(BLUE)
+                  .backgroundColor(Theme.weakBlue())
+                  .fontColor(Theme.blue())
                   .borderRadius(10)
               }
             }
             if (this.product() && this.product()!.note) {
               Text(this.product()!.note)
                 .fontSize(12)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
             }
           }
           .width('100%')
           .padding(16)
-          .backgroundColor('#ffffff')
+          .backgroundColor(Theme.card())
           .borderRadius(10)
           .alignItems(HorizontalAlign.Start)
 
@@ -214,7 +213,7 @@ export struct ProductDetailPage {
             Column({ space: 4 }) {
               Text('笔数')
                 .fontSize(11)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
               Text(String(this.doc.records.filter((r) => r.productId === this.productId).length))
                 .fontSize(16)
                 .fontWeight(FontWeight.Bold)
@@ -222,13 +221,13 @@ export struct ProductDetailPage {
             .layoutWeight(1)
             .alignItems(HorizontalAlign.Start)
             .padding(12)
-            .backgroundColor('#ffffff')
+            .backgroundColor(Theme.card())
             .borderRadius(10)
 
             Column({ space: 4 }) {
               Text('件数')
                 .fontSize(11)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
               Text(qty(this.totalQty()))
                 .fontSize(16)
                 .fontWeight(FontWeight.Bold)
@@ -236,22 +235,22 @@ export struct ProductDetailPage {
             .layoutWeight(1)
             .alignItems(HorizontalAlign.Start)
             .padding(12)
-            .backgroundColor('#ffffff')
+            .backgroundColor(Theme.card())
             .borderRadius(10)
 
             Column({ space: 4 }) {
               Text('金额(元)')
                 .fontSize(11)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
               Text(money(this.totalAmount()))
                 .fontSize(16)
                 .fontWeight(FontWeight.Bold)
-                .fontColor('#f67a2e')
+                .fontColor(Theme.orange())
             }
             .layoutWeight(1)
             .alignItems(HorizontalAlign.Start)
             .padding(12)
-            .backgroundColor('#ffffff')
+            .backgroundColor(Theme.card())
             .borderRadius(10)
           }
           .width('100%')
@@ -264,7 +263,7 @@ export struct ProductDetailPage {
             if (this.processes().length === 0) {
               Text('暂无工序，请到「产品与工序」中添加')
                 .fontSize(12)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
             }
             ForEach(this.processes(), (c: Process) => {
               Row() {
@@ -273,17 +272,17 @@ export struct ProductDetailPage {
                 Blank()
                 Text(money(c.price) + ' / 件')
                   .fontSize(13)
-                  .fontColor(BLUE)
+                  .fontColor(Theme.blue())
               }
               .width('100%')
               .padding({ top: 6, bottom: 6 })
-              .backgroundColor('#ffffff')
+              .backgroundColor(Theme.card())
               .borderRadius(8)
             }, (c: Process) => c.id)
           }
           .width('100%')
           .padding(12)
-          .backgroundColor('#f2f3f5')
+          .backgroundColor(Theme.chip())
           .borderRadius(10)
           .alignItems(HorizontalAlign.Start)
 
@@ -297,7 +296,7 @@ export struct ProductDetailPage {
                 Column({ space: 2 }) {
                   Text(r.date)
                     .fontSize(12)
-                    .fontColor(GRAY)
+                    .fontColor(Theme.sub())
                   Text(r.processName)
                     .fontSize(14)
                 }
@@ -309,13 +308,13 @@ export struct ProductDetailPage {
                     .fontWeight(FontWeight.Medium)
                   Text(`${qty(r.quantity)}×${money(r.price)}`)
                     .fontSize(11)
-                    .fontColor(GRAY)
+                    .fontColor(Theme.sub())
                 }
                 .alignItems(HorizontalAlign.End)
               }
               .width('100%')
               .padding(10)
-              .backgroundColor('#ffffff')
+              .backgroundColor(Theme.card())
               .borderRadius(8)
               .onClick(() => {
                 router.pushUrl({ url: 'pages/RecordDetailPage', params: { id: r.id } })
@@ -324,15 +323,15 @@ export struct ProductDetailPage {
           }
           .width('100%')
           .padding(12)
-          .backgroundColor('#f2f3f5')
+          .backgroundColor(Theme.chip())
           .borderRadius(10)
           .alignItems(HorizontalAlign.Start)
 
           Button('删除产品')
             .width('100%')
             .height(44)
-            .backgroundColor('#ffffff')
-            .fontColor('#ee0a24')
+            .backgroundColor(Theme.card())
+            .fontColor(Theme.red())
             .borderRadius(10)
             .onClick(() => {
               this.doDelete()
@@ -345,7 +344,7 @@ export struct ProductDetailPage {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#f7f8fa')
+      .backgroundColor(Theme.bg())
     }
     .width('100%')
     .height('100%')

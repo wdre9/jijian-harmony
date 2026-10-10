@@ -7,10 +7,8 @@ import { DataDoc, PieceRecord, Process, Product } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import { todayStr, toDateStr } from '../utils/DateUtils'
 import { money, round } from '../utils/FormatUtils'
+import { Theme } from '../common/Theme'
 
-const BLUE: string = '#1989fa'
-const GRAY: string = '#969799'
-const CARD: string = '#ffffff'
 
 interface EditParams {
   id?: string
@@ -162,7 +160,7 @@ struct RecordEditPage {
     Row() {
       Text('‹ 返回')
         .fontSize(15)
-        .fontColor(BLUE)
+        .fontColor(Theme.blue())
         .onClick(() => {
           router.back()
         })
@@ -173,7 +171,7 @@ struct RecordEditPage {
       Blank()
       Text('保存')
         .fontSize(15)
-        .fontColor(BLUE)
+        .fontColor(Theme.blue())
         .onClick(() => {
           this.save()
         })
@@ -181,7 +179,7 @@ struct RecordEditPage {
     .width('100%')
     .height(48)
     .padding({ left: 14, right: 14 })
-    .backgroundColor(CARD)
+    .backgroundColor(Theme.card())
   }
 
   @Builder
@@ -201,12 +199,12 @@ struct RecordEditPage {
               if (p.spec) {
                 Text(p.spec)
                   .fontSize(12)
-                  .fontColor(GRAY)
+                  .fontColor(Theme.sub())
               }
             }
             .width('100%')
             .padding(12)
-            .backgroundColor(this.productId === p.id ? '#e8f3ff' : '#ffffff')
+            .backgroundColor(this.productId === p.id ? Theme.weakBlue() : Theme.card())
             .borderRadius(8)
             .onClick(() => {
               this.selectProduct(p)
@@ -220,7 +218,7 @@ struct RecordEditPage {
     .width('100%')
     .height('100%')
     .padding(12)
-    .backgroundColor('#f7f8fa')
+    .backgroundColor(Theme.bg())
   }
 
   @Builder
@@ -239,11 +237,11 @@ struct RecordEditPage {
                 .layoutWeight(1)
               Text(money(c.price))
                 .fontSize(13)
-                .fontColor(BLUE)
+                .fontColor(Theme.blue())
             }
             .width('100%')
             .padding(12)
-            .backgroundColor(this.processId === c.id ? '#e8f3ff' : '#ffffff')
+            .backgroundColor(this.processId === c.id ? Theme.weakBlue() : Theme.card())
             .borderRadius(8)
             .onClick(() => {
               this.selectProcess(c)
@@ -257,7 +255,7 @@ struct RecordEditPage {
     .width('100%')
     .height('100%')
     .padding(12)
-    .backgroundColor('#f7f8fa')
+    .backgroundColor(Theme.bg())
   }
 
   @Builder
@@ -265,13 +263,13 @@ struct RecordEditPage {
     Column() {
       Text(label)
         .fontSize(13)
-        .fontColor(GRAY)
+        .fontColor(Theme.sub())
       Blank()
       content()
     }
     .width('100%')
     .padding(14)
-    .backgroundColor(CARD)
+    .backgroundColor(Theme.card())
     .borderRadius(10)
   }
 
@@ -285,20 +283,20 @@ struct RecordEditPage {
             Column({ space: 4 }) {
               Text('产品')
                 .fontSize(12)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
               Text(this.currentProduct() ? `${this.currentProduct()!.name}${this.currentProduct()!.spec ? '  ' + this.currentProduct()!.spec : ''}` : '点击选择产品')
                 .fontSize(15)
-                .fontColor(this.currentProduct() ? '#323233' : BLUE)
+                .fontColor(this.currentProduct() ? Theme.text() : Theme.blue())
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1)
             Text('›')
               .fontSize(18)
-              .fontColor('#c8c9cc')
+              .fontColor(Theme.divider())
           }
           .width('100%')
           .padding(14)
-          .backgroundColor(CARD)
+          .backgroundColor(Theme.card())
           .borderRadius(10)
           .onClick(() => {
             this.showProductSheet = true
@@ -310,20 +308,20 @@ struct RecordEditPage {
             Column({ space: 4 }) {
               Text('工序')
                 .fontSize(12)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
               Text(this.currentProcess() ? this.currentProcess()!.name : '点击选择工序')
                 .fontSize(15)
-                .fontColor(this.currentProcess() ? '#323233' : BLUE)
+                .fontColor(this.currentProcess() ? Theme.text() : Theme.blue())
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1)
             Text('›')
               .fontSize(18)
-              .fontColor('#c8c9cc')
+              .fontColor(Theme.divider())
           }
           .width('100%')
           .padding(14)
-          .backgroundColor(CARD)
+          .backgroundColor(Theme.card())
           .borderRadius(10)
           .onClick(() => {
             if (!this.productId) {
@@ -339,15 +337,15 @@ struct RecordEditPage {
             Column({ space: 4 }) {
               Text('数量')
                 .fontSize(12)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
               Row({ space: 6 }) {
                 Button('-')
                   .width(30)
                   .height(30)
                   .fontSize(16)
                   .type(ButtonType.Circle)
-                  .backgroundColor('#ebedf0')
-                  .fontColor('#323233')
+                  .backgroundColor(Theme.line())
+                  .fontColor(Theme.text())
                   .onClick(() => {
                     const v: number = (parseFloat(this.quantityText) || 1) - 1
                     this.quantityText = v > 0 ? String(v) : '1'
@@ -366,8 +364,8 @@ struct RecordEditPage {
                   .height(30)
                   .fontSize(16)
                   .type(ButtonType.Circle)
-                  .backgroundColor('#e8f3ff')
-                  .fontColor(BLUE)
+                  .backgroundColor(Theme.weakBlue())
+                  .fontColor(Theme.blue())
                   .onClick(() => {
                     const v: number = (parseFloat(this.quantityText) || 0) + 1
                     this.quantityText = String(v)
@@ -380,7 +378,7 @@ struct RecordEditPage {
             Column({ space: 4 }) {
               Text('单价(元)')
                 .fontSize(12)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
               TextInput({ text: this.priceText, placeholder: '0.00' })
                 .width(90)
                 .height(30)
@@ -395,7 +393,7 @@ struct RecordEditPage {
           }
           .width('100%')
           .padding(14)
-          .backgroundColor(CARD)
+          .backgroundColor(Theme.card())
           .borderRadius(10)
 
           Row() {
@@ -405,11 +403,11 @@ struct RecordEditPage {
             Text(money(this.currentAmount()))
               .fontSize(20)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#f67a2e')
+              .fontColor(Theme.orange())
           }
           .width('100%')
           .padding(14)
-          .backgroundColor('#fff7ec')
+          .backgroundColor(Theme.orangeBg())
           .borderRadius(10)
 
           // 日期
@@ -417,7 +415,7 @@ struct RecordEditPage {
             Column({ space: 4 }) {
               Text('日期')
                 .fontSize(12)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
               Text(this.dateText)
                 .fontSize(15)
             }
@@ -425,11 +423,11 @@ struct RecordEditPage {
             .layoutWeight(1)
             Text('选择 ›')
               .fontSize(13)
-              .fontColor(BLUE)
+              .fontColor(Theme.blue())
           }
           .width('100%')
           .padding(14)
-          .backgroundColor(CARD)
+          .backgroundColor(Theme.card())
           .borderRadius(10)
           .onClick(() => {
             DatePickerDialog.show({
@@ -446,13 +444,13 @@ struct RecordEditPage {
           Column({ space: 6 }) {
             Text('班次')
               .fontSize(12)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
             Row({ space: 8 }) {
               Text('白班')
                 .fontSize(14)
                 .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-                .backgroundColor(this.shift === 'day' ? BLUE : '#ebedf0')
-                .fontColor(this.shift === 'day' ? '#ffffff' : '#323233')
+                .backgroundColor(this.shift === 'day' ? Theme.blue() : Theme.line())
+                .fontColor(this.shift === 'day' ? Theme.card() : Theme.text())
                 .borderRadius(6)
                 .onClick(() => {
                   this.shift = 'day'
@@ -460,8 +458,8 @@ struct RecordEditPage {
               Text('夜班')
                 .fontSize(14)
                 .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-                .backgroundColor(this.shift === 'night' ? BLUE : '#ebedf0')
-                .fontColor(this.shift === 'night' ? '#ffffff' : '#323233')
+                .backgroundColor(this.shift === 'night' ? Theme.blue() : Theme.line())
+                .fontColor(this.shift === 'night' ? Theme.card() : Theme.text())
                 .borderRadius(6)
                 .onClick(() => {
                   this.shift = 'night'
@@ -470,7 +468,7 @@ struct RecordEditPage {
           }
           .width('100%')
           .padding(14)
-          .backgroundColor(CARD)
+          .backgroundColor(Theme.card())
           .borderRadius(10)
           .alignItems(HorizontalAlign.Start)
 
@@ -478,7 +476,7 @@ struct RecordEditPage {
           Column({ space: 6 }) {
             Text('工人')
               .fontSize(12)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
             TextInput({ text: this.workerText, placeholder: '输入工人姓名' })
               .width('100%')
               .height(36)
@@ -493,8 +491,8 @@ struct RecordEditPage {
                     Text(w.name)
                       .fontSize(12)
                       .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-                      .backgroundColor(this.workerText === w.name ? '#e8f3ff' : '#f2f3f5')
-                      .fontColor(this.workerText === w.name ? BLUE : '#323233')
+                      .backgroundColor(this.workerText === w.name ? Theme.weakBlue() : Theme.chip())
+                      .fontColor(this.workerText === w.name ? Theme.blue() : Theme.text())
                       .borderRadius(10)
                       .onClick(() => {
                         this.workerText = w.name
@@ -509,7 +507,7 @@ struct RecordEditPage {
           }
           .width('100%')
           .padding(14)
-          .backgroundColor(CARD)
+          .backgroundColor(Theme.card())
           .borderRadius(10)
           .alignItems(HorizontalAlign.Start)
 
@@ -517,7 +515,7 @@ struct RecordEditPage {
           Column({ space: 6 }) {
             Text('备注')
               .fontSize(12)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
             TextInput({ text: this.noteText, placeholder: '选填' })
               .width('100%')
               .height(36)
@@ -528,7 +526,7 @@ struct RecordEditPage {
           }
           .width('100%')
           .padding(14)
-          .backgroundColor(CARD)
+          .backgroundColor(Theme.card())
           .borderRadius(10)
           .alignItems(HorizontalAlign.Start)
 
@@ -539,7 +537,7 @@ struct RecordEditPage {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#f7f8fa')
+      .backgroundColor(Theme.bg())
     }
     .width('100%')
     .height('100%')

@@ -6,9 +6,8 @@ import { DataDoc, Worker } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import { money } from '../utils/FormatUtils'
 import { EnrichedRecord, enrichRecords, sumAmount } from '../utils/StatsUtils'
+import { Theme } from '../common/Theme'
 
-const BLUE: string = '#1989fa'
-const GRAY: string = '#969799'
 
 @Component
 export struct WorkersPage {
@@ -50,8 +49,8 @@ export struct WorkersPage {
       title: '删除工人',
       message: `确定将「${w.name}」移出名单？历史记录保留。`,
       buttons: [
-        { text: '取消', color: GRAY },
-        { text: '删除', color: '#ee0a24' }
+        { text: '取消', color: Theme.sub() },
+        { text: '删除', color: Theme.red() }
       ]
     })
     if (res.index === 1) {
@@ -69,7 +68,7 @@ export struct WorkersPage {
       Row() {
         Text('‹ 返回')
           .fontSize(15)
-          .fontColor(BLUE)
+          .fontColor(Theme.blue())
           .onClick(() => {
             router.back()
           })
@@ -80,12 +79,12 @@ export struct WorkersPage {
         Blank()
         Text(`${this.doc.workers.length} 人`)
           .fontSize(13)
-          .fontColor(GRAY)
+          .fontColor(Theme.sub())
       }
       .width('100%')
       .height(48)
       .padding({ left: 14, right: 14 })
-      .backgroundColor('#ffffff')
+      .backgroundColor(Theme.card())
 
       // 新增
       Row({ space: 8 }) {
@@ -100,7 +99,7 @@ export struct WorkersPage {
           })
         Button('添加')
           .height(40)
-          .backgroundColor(BLUE)
+          .backgroundColor(Theme.blue())
           .onClick(() => {
             this.doAdd()
           })
@@ -113,17 +112,17 @@ export struct WorkersPage {
           ListItem() {
             Row({ space: 10 }) {
               Circle({ width: 36, height: 36 })
-                .fill('#e8f3ff')
+                .fill(Theme.weakBlue())
               Text(w.name.substring(0, 1))
                 .fontSize(15)
-                .fontColor(BLUE)
+                .fontColor(Theme.blue())
               Column({ space: 3 }) {
                 Text(w.name)
                   .fontSize(15)
                   .fontWeight(FontWeight.Medium)
                 Text(`${this.rowsOf(w.name).length} 条记录 · 最近 ${this.lastUsed(w.name)}`)
                   .fontSize(11)
-                  .fontColor(GRAY)
+                  .fontColor(Theme.sub())
               }
               .alignItems(HorizontalAlign.Start)
               .layoutWeight(1)
@@ -131,10 +130,10 @@ export struct WorkersPage {
                 Text(money(sumAmount(this.rowsOf(w.name))))
                   .fontSize(14)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#f67a2e')
+                  .fontColor(Theme.orange())
                 Text('删除')
                   .fontSize(11)
-                  .fontColor('#ee0a24')
+                  .fontColor(Theme.red())
                   .onClick(() => {
                     this.doRemove(w)
                   })
@@ -143,7 +142,7 @@ export struct WorkersPage {
             }
             .width('100%')
             .padding(14)
-            .backgroundColor('#ffffff')
+            .backgroundColor(Theme.card())
             .borderRadius(10)
           }
         }, (w: Worker) => w.name)
@@ -155,6 +154,6 @@ export struct WorkersPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#f7f8fa')
+    .backgroundColor(Theme.bg())
   }
 }

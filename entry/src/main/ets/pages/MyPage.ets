@@ -5,10 +5,8 @@ import { router, promptAction } from '@kit.ArkUI'
 import { AppSettings, DataDoc } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import { cloneSettings } from '../model/DataDoc'
+import { Theme } from '../common/Theme'
 
-const BLUE: string = '#1989fa'
-const GRAY: string = '#969799'
-const RED: string = '#ee0a24'
 
 @Component
 export struct MyPage {
@@ -45,6 +43,8 @@ export struct MyPage {
     this.doc = next
     this.onDocChanged(next)
     this.syncFromDoc()
+    // 主题变更后立即同步窗口颜色模式（dark=1 / light=0 / auto=-1）
+    this.store.applyThemeToWindow()
   }
 
   private toast(msg: string): void {
@@ -78,7 +78,7 @@ export struct MyPage {
   sectionTitle(title: string) {
     Text(title)
       .fontSize(13)
-      .fontColor(GRAY)
+      .fontColor(Theme.sub())
       .padding({ left: 4, top: 12, bottom: 6 })
       .alignSelf(ItemAlign.Start)
   }
@@ -92,19 +92,19 @@ export struct MyPage {
         if (sub) {
           Text(sub)
             .fontSize(11)
-            .fontColor(GRAY)
+            .fontColor(Theme.sub())
         }
       }
       .alignItems(HorizontalAlign.Start)
       .layoutWeight(1)
       Text('›')
         .fontSize(16)
-        .fontColor('#c8c9cc')
+        .fontColor(Theme.divider())
     }
     .width('100%')
     .height(48)
     .padding({ left: 14, right: 14 })
-    .backgroundColor('#ffffff')
+    .backgroundColor(Theme.card())
     .onClick(() => {
       action()
     })
@@ -115,8 +115,8 @@ export struct MyPage {
     Text(label)
       .fontSize(12)
       .padding({ left: 12, right: 12, top: 4, bottom: 4 })
-      .backgroundColor(this.theme === key ? BLUE : '#f2f3f5')
-      .fontColor(this.theme === key ? '#ffffff' : '#323233')
+      .backgroundColor(this.theme === key ? Theme.blue() : Theme.chip())
+      .fontColor(this.theme === key ? Theme.white() : Theme.text())
       .borderRadius(12)
       .onClick(() => {
         this.saveSettings((s: AppSettings) => {
@@ -130,8 +130,8 @@ export struct MyPage {
     Text(label)
       .fontSize(12)
       .padding({ left: 12, right: 12, top: 4, bottom: 4 })
-      .backgroundColor(this.homeRange === key ? BLUE : '#f2f3f5')
-      .fontColor(this.homeRange === key ? '#ffffff' : '#323233')
+      .backgroundColor(this.homeRange === key ? Theme.blue() : Theme.chip())
+      .fontColor(this.homeRange === key ? Theme.white() : Theme.text())
       .borderRadius(12)
       .onClick(() => {
         this.saveSettings((s: AppSettings) => {
@@ -150,11 +150,11 @@ export struct MyPage {
             .fontWeight(FontWeight.Bold)
           Text('v0.1.0 · 数据仅存本机')
             .fontSize(11)
-            .fontColor(GRAY)
+            .fontColor(Theme.sub())
         }
         .width('100%')
         .padding(20)
-        .backgroundColor('#ffffff')
+        .backgroundColor(Theme.card())
         .borderRadius(10)
         .margin({ top: 10, left: 12, right: 12 })
 
@@ -172,7 +172,7 @@ export struct MyPage {
           .width('100%')
           .height(48)
           .padding({ left: 14, right: 14 })
-          .backgroundColor('#ffffff')
+          .backgroundColor(Theme.card())
         }
         .width('100%')
         .borderRadius(10)
@@ -199,7 +199,7 @@ export struct MyPage {
           .width('100%')
           .height(48)
           .padding({ left: 14, right: 14 })
-          .backgroundColor('#ffffff')
+          .backgroundColor(Theme.card())
           Row({ space: 8 }) {
             Text('每月目标(元)')
               .fontSize(14)
@@ -218,7 +218,7 @@ export struct MyPage {
           .width('100%')
           .height(48)
           .padding({ left: 14, right: 14 })
-          .backgroundColor('#ffffff')
+          .backgroundColor(Theme.card())
           Row({ space: 8 }) {
             Text('首页概览范围')
               .fontSize(14)
@@ -230,7 +230,7 @@ export struct MyPage {
           .width('100%')
           .height(48)
           .padding({ left: 14, right: 14 })
-          .backgroundColor('#ffffff')
+          .backgroundColor(Theme.card())
         }
         .width('100%')
         .borderRadius(10)
@@ -245,7 +245,7 @@ export struct MyPage {
                 .fontSize(14)
               Text('记一笔时自动填入')
                 .fontSize(11)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1)
@@ -263,19 +263,19 @@ export struct MyPage {
           .width('100%')
           .height(52)
           .padding({ left: 14, right: 14 })
-          .backgroundColor('#ffffff')
+          .backgroundColor(Theme.card())
           Row({ space: 8 }) {
             Column({ space: 3 }) {
               Text('记住上次选择')
                 .fontSize(14)
               Text('记一笔时沿用上次产品/工序')
                 .fontSize(11)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1)
             Toggle({ type: ToggleType.Switch, isOn: this.rememberLast })
-              .selectedColor(BLUE)
+              .selectedColor(Theme.blue())
               .onChange((on: boolean) => {
                 this.saveSettings((s: AppSettings) => {
                   s.rememberLast = on
@@ -285,7 +285,7 @@ export struct MyPage {
           .width('100%')
           .height(52)
           .padding({ left: 14, right: 14 })
-          .backgroundColor('#ffffff')
+          .backgroundColor(Theme.card())
         }
         .width('100%')
         .borderRadius(10)
@@ -326,15 +326,15 @@ export struct MyPage {
         Column({ space: 4 }) {
           Text('数据安全说明')
             .fontSize(12)
-            .fontColor(GRAY)
+            .fontColor(Theme.sub())
           Text('所有数据仅保存在本机（RelationalStore + 沙箱文件），不联网、不上传；保存数据后每 24 小时最多自动备份一次，备份写入「计件自动备份」目录，滚动保留最近 14 份。')
             .fontSize(11)
-            .fontColor(GRAY)
+            .fontColor(Theme.sub())
             .lineHeight(17)
         }
         .width('100%')
         .padding(14)
-        .backgroundColor('#ffffff')
+        .backgroundColor(Theme.card())
         .borderRadius(10)
         .margin({ left: 12, right: 12, top: 10 })
         .alignItems(HorizontalAlign.Start)
@@ -345,6 +345,6 @@ export struct MyPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#f7f8fa')
+    .backgroundColor(Theme.bg())
   }
 }

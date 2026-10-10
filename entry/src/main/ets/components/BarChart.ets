@@ -1,15 +1,13 @@
 /**
- * Canvas 自绘柱状图（统计页：工序/工人排行）
+ * Canvas 自绘柱状图（统计页：工序/工人排行 / 近6月对比）
  */
 import { RankItem } from '../model/Types'
-
-const BLUE: string = '#1989fa'
-const GRID: string = '#e5e5e5'
-const TEXT: string = '#666666'
+import { Theme } from '../common/Theme'
 
 @Component
 export struct BarChart {
   @Prop @Watch('onDataChange') items: RankItem[] = []
+  @Prop @Watch('onDataChange') dark: boolean = false
   private settings: RenderingContextSettings = new RenderingContextSettings(true)
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings)
   private readyFlag: boolean = false
@@ -39,6 +37,9 @@ export struct BarChart {
     if (list.length === 0) {
       return
     }
+    const grid: string = Theme.grid()
+    const text: string = Theme.chartText()
+    const blue: string = Theme.blue()
     const padL: number = 40
     const padR: number = 10
     const padT: number = 14
@@ -55,9 +56,9 @@ export struct BarChart {
       maxV = 1
     }
     // 网格
-    ctx.strokeStyle = GRID
+    ctx.strokeStyle = grid
     ctx.lineWidth = 1
-    ctx.fillStyle = TEXT
+    ctx.fillStyle = text
     ctx.font = '10vp sans-serif'
     ctx.textAlign = 'right'
     ctx.textBaseline = 'middle'
@@ -81,14 +82,14 @@ export struct BarChart {
       const cx: number = padL + slot * i + slot / 2
       const x: number = cx - barW / 2
       const y: number = padT + plotH - h
-      ctx.fillStyle = BLUE
+      ctx.fillStyle = blue
       ctx.fillRect(x, y, barW, h)
       // 名称（太长截断）
       let name: string = list[i].name
       if (name.length > 5) {
         name = name.substring(0, 5) + '…'
       }
-      ctx.fillStyle = TEXT
+      ctx.fillStyle = text
       ctx.fillText(name, cx, padT + plotH + 6)
     }
   }

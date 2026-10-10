@@ -7,10 +7,8 @@ import { HomePage } from './HomePage'
 import { DetailPage } from './DetailPage'
 import { StatsPage } from './StatsPage'
 import { MyPage } from './MyPage'
+import { Theme } from '../common/Theme'
 
-const BLUE: string = '#1989fa'
-const GRAY: string = '#969799'
-const BG: string = '#f7f8fa'
 
 @Entry
 @Component
@@ -41,10 +39,10 @@ struct Index {
     Column({ space: 2 }) {
       Text(icon)
         .fontSize(20)
-        .fontColor(this.currentTab === index ? BLUE : GRAY)
+        .fontColor(this.currentTab === index ? Theme.blue() : Theme.sub())
       Text(title)
         .fontSize(10)
-        .fontColor(this.currentTab === index ? BLUE : GRAY)
+        .fontColor(this.currentTab === index ? Theme.blue() : Theme.sub())
     }
     .width('100%')
     .height('100%')
@@ -58,10 +56,10 @@ struct Index {
           LoadingProgress()
             .width(48)
             .height(48)
-            .color(BLUE)
+            .color(Theme.blue())
           Text('正在加载数据…')
             .fontSize(14)
-            .fontColor(GRAY)
+            .fontColor(Theme.sub())
             .margin({ top: 12 })
         }
         .width('100%')
@@ -112,7 +110,7 @@ struct Index {
           }
           .tabBar(this.tabBuilder(3, '我', '我的'))
         }
-        .backgroundColor(BG)
+        .backgroundColor(Theme.bg())
         .onChange((index: number) => {
           this.currentTab = index
         })

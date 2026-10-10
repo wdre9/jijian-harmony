@@ -24,6 +24,8 @@ export default class EntryAbility extends UIAbility {
     store.init(this.context)
       .then(() => {
         hilog.info(0x0000, TAG, 'store init ok')
+        // 数据层就绪后按 settings.theme 应用窗口颜色模式
+        store.applyThemeToWindow()
       })
       .catch((e: Error) => {
         hilog.error(0x0000, TAG, `store init failed: ${e.message}`)
@@ -33,6 +35,8 @@ export default class EntryAbility extends UIAbility {
       const win: window.Window = windowStage.getMainWindowSync()
       const cm: number = win.getWindowProperties().colorMode
       store.setSystemDark(cm === 1)
+      // 绑定主窗口，用于主题切换时修改窗口颜色模式
+      store.setWindow(win)
     } catch (e) {
       // 窗口属性读取失败忽略
     }
@@ -60,6 +64,9 @@ export default class EntryAbility extends UIAbility {
   /** 系统配置变化（深浅色切换等） */
   onConfigurationUpdate(newConfig: Configuration): void {
     const dark: boolean = newConfig.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
-    AppStore.getInstance().setSystemDark(dark)
+    const store: AppStore = AppStore.getInstance()
+    store.setSystemDark(dark)
+    // auto 主题下随系统切换窗口深浅色
+    store.applyThemeToWindow()
   }
 }

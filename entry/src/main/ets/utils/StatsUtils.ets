@@ -217,3 +217,106 @@ export function maxDayAmount(list: EnrichedRecord[]): number {
   }
   return round(max, 2)
 }
+
+/** 班次统计项 */
+export interface ShiftStat {
+  name: string
+  amount: number
+  quantity: number
+  count: number
+}
+
+/** 班次对比（白班 / 夜班 金额与件数，对齐 jijian-app byShift） */
+export function shiftStats(list: EnrichedRecord[]): ShiftStat[] {
+  const build = (name: string, rows: EnrichedRecord[]): ShiftStat => {
+    let amt: number = 0
+    let q: number = 0
+    for (let i = 0; i < rows.length; i++) {
+      amt += rows[i].amount || 0
+      q += rows[i].quantity || 0
+    }
+    return { name: name, amount: round(amt, 2), quantity: round(q, 3), count: rows.length }
+  }
+  const day: EnrichedRecord[] = []
+  const night: EnrichedRecord[] = []
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].shift === 'night') {
+      night.push(list[i])
+    } else {
+      day.push(list[i])
+    }
+  }
+  return [build('白班', day), build('夜班', night)]
+}
+
+/** 近 N 个月（含本月，升序）YYYY-MM 列表 */
+export function recentMonths(n: number): string[] {
+  const now: Date = new Date()
+  const list: string[] = []
+  const p = (x: number): string => (x < 10 ? `0${x}` : String(x))
+  for (let i = n - 1; i >= 0; i--) {
+    const d: Date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    list.push(`${d.getFullYear()}-${p(d.getMonth() + 1)}`)
+  }
+  return list
+}
+
+/** 近 6 个月金额对比（含本月，升序，缺月补 0） */
+export function recent6Months(list: EnrichedRecord[]): TrendPoint[] {
+  const months: string[] = recentMonths(6)
+  const map: Map<string, number> = monthAmounts(list, months)
+  const pts: TrendPoint[] = []
+  for (let i = 0; i < months.length; i++) {
+    pts.push({ date: months[i], amount: round(map.get(months[i]) ?? 0, 2) })
+  }
+  return pts
+}
+
+/** 按月聚合桶：区间内逐月金额（长区间 > 62 天时用，对齐 jijian-app monthBuckets） */
+export function monthBuckets(list: EnrichedRecord[], start: string, end: string): TrendPoint[] {
+  const map: Map<string, number> = new Map<string, number>()
+  for (let i = 0; i < list.length; i++) {
+    const r: EnrichedRecord = list[i]
+    if (r.date < start || r.date > end) {
+      continue
+    }
+    const ym: string = ymOf(r.date)
+    map.set(ym, (map.get(ym) ?? 0) + r.amount)
+  }
+  const pts: TrendPoint[] = []
+  const cur: Date = new Date(`${start}T00:00:00`)
+  const endD: Date = new Date(`${end}T00:00:00`)
+  let y: number = cur.getFullYear()
+  let m: number = cur.getMonth()
+  const ey: number = endD.getFullYear()
+  const em: number = endD.getMonth()
+  const p = (n: number): string => (n < 10 ? `0${n}` : String(n))
+  while (y < ey || (y === ey && m <= em)) {
+    const ym: string = `${y}-${p(m + 1)}`
+    pts.push({ date: ym, amount: round(map.get(ym) ?? 0, 2) })
+    m++
+    if (m > 11) {
+      m = 0
+      y++
+    }
+  }
+  return pts
+}
+
+/** 最高单日：日期 + 金额（对齐 jijian-app bestDay） */
+export function bestDayInfo(list: EnrichedRecord[]): { date: string, amount: number } {
+  const map: Map<string, number> = sumByKey(list, (r) => r.date)
+  let maxD: string = ''
+  let max: number = 0
+  const iter = map.keys()
+  let k = iter.next()
+  while (!k.done) {
+    const v: number = map.get(k.value) ?? 0
+    if (v > max) {
+      max = v
+      maxD = k.value
+    }
+    k = iter.next()
+  }
+  return { date: maxD, amount: round(max, 2) }
+}

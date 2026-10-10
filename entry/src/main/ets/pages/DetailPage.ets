@@ -9,10 +9,8 @@ import { EnrichedRecord, enrichRecords, groupByDate, sumAmount, sumQty } from '.
 import { todayStr, weekRangeOf } from '../utils/DateUtils'
 import { money, qty } from '../utils/FormatUtils'
 import { detailAoa, detailCsv, buildXls, SheetData, countText } from '../utils/ExporterUtils'
+import { Theme } from '../common/Theme'
 
-const BLUE: string = '#1989fa'
-const GRAY: string = '#969799'
-const CARD: string = '#ffffff'
 
 @Component
 export struct DetailPage {
@@ -211,8 +209,8 @@ export struct DetailPage {
     Text(label)
       .fontSize(12)
       .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-      .backgroundColor(this.rangeType === key ? BLUE : '#ffffff')
-      .fontColor(this.rangeType === key ? '#ffffff' : '#323233')
+      .backgroundColor(this.rangeType === key ? Theme.blue() : Theme.card())
+      .fontColor(this.rangeType === key ? Theme.card() : Theme.text())
       .borderRadius(12)
       .onClick(() => {
         this.rangeType = key
@@ -236,7 +234,7 @@ export struct DetailPage {
           .fontSize(14)
           .width('100%')
           .padding(12)
-          .backgroundColor('#f7f8fa')
+          .backgroundColor(Theme.bg())
           .borderRadius(8)
           .onClick(() => {
             this.doExport(item.key)
@@ -247,7 +245,7 @@ export struct DetailPage {
     .width('100%')
     .height('100%')
     .padding(12)
-    .backgroundColor('#ffffff')
+    .backgroundColor(Theme.card())
   }
 
   build() {
@@ -261,18 +259,18 @@ export struct DetailPage {
         if (this.selecting) {
           Text(`已选 ${this.selectedIds.length} 项`)
             .fontSize(13)
-            .fontColor(GRAY)
+            .fontColor(Theme.sub())
             .margin({ right: 12 })
           Text('导出选中')
             .fontSize(14)
-            .fontColor(BLUE)
+            .fontColor(Theme.blue())
             .margin({ right: 12 })
             .onClick(() => {
               this.showExportSheet = true
             })
           Text('取消')
             .fontSize(14)
-            .fontColor(GRAY)
+            .fontColor(Theme.sub())
             .onClick(() => {
               this.selecting = false
               this.selectedIds = []
@@ -280,7 +278,7 @@ export struct DetailPage {
         } else {
           Text('批量导出')
             .fontSize(14)
-            .fontColor(BLUE)
+            .fontColor(Theme.blue())
             .onClick(() => {
               this.showExportSheet = true
             })
@@ -289,7 +287,7 @@ export struct DetailPage {
       .width('100%')
       .height(48)
       .padding({ left: 14, right: 14 })
-      .backgroundColor('#ffffff')
+      .backgroundColor(Theme.card())
 
       // 筛选区
       Column({ space: 8 }) {
@@ -311,8 +309,8 @@ export struct DetailPage {
             Text('全部产品')
               .fontSize(12)
               .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-              .backgroundColor(this.filterProduct === '' ? BLUE : '#ffffff')
-              .fontColor(this.filterProduct === '' ? '#ffffff' : '#323233')
+              .backgroundColor(this.filterProduct === '' ? Theme.blue() : Theme.card())
+              .fontColor(this.filterProduct === '' ? Theme.card() : Theme.text())
               .borderRadius(12)
               .onClick(() => {
                 this.filterProduct = ''
@@ -321,8 +319,8 @@ export struct DetailPage {
               Text(p.name)
                 .fontSize(12)
                 .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-                .backgroundColor(this.filterProduct === p.id ? BLUE : '#ffffff')
-                .fontColor(this.filterProduct === p.id ? '#ffffff' : '#323233')
+                .backgroundColor(this.filterProduct === p.id ? Theme.blue() : Theme.card())
+                .fontColor(this.filterProduct === p.id ? Theme.card() : Theme.text())
                 .borderRadius(12)
                 .onClick(() => {
                   this.filterProduct = p.id
@@ -338,8 +336,8 @@ export struct DetailPage {
           Text('全部工人')
             .fontSize(12)
             .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-            .backgroundColor(this.filterWorker === '' ? BLUE : '#ffffff')
-            .fontColor(this.filterWorker === '' ? '#ffffff' : '#323233')
+            .backgroundColor(this.filterWorker === '' ? Theme.blue() : Theme.card())
+            .fontColor(this.filterWorker === '' ? Theme.card() : Theme.text())
             .borderRadius(12)
             .onClick(() => {
               this.filterWorker = ''
@@ -348,8 +346,8 @@ export struct DetailPage {
             Text(w.name)
               .fontSize(12)
               .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-              .backgroundColor(this.filterWorker === w.name ? BLUE : '#ffffff')
-              .fontColor(this.filterWorker === w.name ? '#ffffff' : '#323233')
+              .backgroundColor(this.filterWorker === w.name ? Theme.blue() : Theme.card())
+              .fontColor(this.filterWorker === w.name ? Theme.card() : Theme.text())
               .borderRadius(12)
               .onClick(() => {
                 this.filterWorker = w.name
@@ -358,8 +356,8 @@ export struct DetailPage {
           Text('白班')
             .fontSize(12)
             .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-            .backgroundColor(this.filterShift === 'day' ? BLUE : '#ffffff')
-            .fontColor(this.filterShift === 'day' ? '#ffffff' : '#323233')
+            .backgroundColor(this.filterShift === 'day' ? Theme.blue() : Theme.card())
+            .fontColor(this.filterShift === 'day' ? Theme.card() : Theme.text())
             .borderRadius(12)
             .onClick(() => {
               this.filterShift = this.filterShift === 'day' ? '' : 'day'
@@ -367,8 +365,8 @@ export struct DetailPage {
           Text('夜班')
             .fontSize(12)
             .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-            .backgroundColor(this.filterShift === 'night' ? BLUE : '#ffffff')
-            .fontColor(this.filterShift === 'night' ? '#ffffff' : '#323233')
+            .backgroundColor(this.filterShift === 'night' ? Theme.blue() : Theme.card())
+            .fontColor(this.filterShift === 'night' ? Theme.card() : Theme.text())
             .borderRadius(12)
             .onClick(() => {
               this.filterShift = this.filterShift === 'night' ? '' : 'night'
@@ -377,7 +375,7 @@ export struct DetailPage {
       }
       .width('100%')
       .padding(10)
-      .backgroundColor('#ffffff')
+      .backgroundColor(Theme.card())
       .borderRadius(10)
       .margin({ left: 10, right: 10, top: 8 })
 
@@ -385,7 +383,7 @@ export struct DetailPage {
       Row() {
         Text(`共 ${this.filtered().length} 条 · 合计 ${money(sumAmount(this.filtered()))}`)
           .fontSize(12)
-          .fontColor(GRAY)
+          .fontColor(Theme.sub())
           .margin({ left: 14, top: 6, bottom: 4 })
         Blank()
       }
@@ -402,15 +400,15 @@ export struct DetailPage {
                   .fontWeight(FontWeight.Medium)
                 Text(`合计 ${money(sumAmount(this.rowsOfDate(date, this.filtered())))} · ${qty(sumQty(this.rowsOfDate(date, this.filtered())))} 件`)
                   .fontSize(12)
-                  .fontColor(GRAY)
+                  .fontColor(Theme.sub())
                 Blank()
                 Text(`${this.rowsOfDate(date, this.filtered()).length} 笔`)
                   .fontSize(12)
-                  .fontColor(GRAY)
+                  .fontColor(Theme.sub())
               }
               .width('100%')
               .padding({ left: 14, right: 14, top: 8, bottom: 8 })
-              .backgroundColor('#eef2f7')
+              .backgroundColor(Theme.chip())
             }
 
             ForEach(this.rowsOfDate(date, this.filtered()), (r: EnrichedRecord) => {
@@ -419,15 +417,15 @@ export struct DetailPage {
                   if (this.selecting) {
                     Text(this.selectedIds.indexOf(r.id) >= 0 ? '☑' : '☐')
                       .fontSize(18)
-                      .fontColor(BLUE)
+                      .fontColor(Theme.blue())
                   }
                   Column({ space: 3 }) {
                     Text(`${r.productName} · ${r.processName}`)
                       .fontSize(14)
-                      .fontColor('#323233')
+                      .fontColor(Theme.text())
                     Text(`${r.worker || '未填工人'}  ${r.shift === 'night' ? '夜班' : '白班'}${r.note ? '  ' + r.note : ''}`)
                       .fontSize(11)
-                      .fontColor(GRAY)
+                      .fontColor(Theme.sub())
                   }
                   .alignItems(HorizontalAlign.Start)
                   .layoutWeight(1)
@@ -436,16 +434,16 @@ export struct DetailPage {
                     Text(money(r.amount))
                       .fontSize(14)
                       .fontWeight(FontWeight.Bold)
-                      .fontColor('#323233')
+                      .fontColor(Theme.text())
                     Text(`${qty(r.quantity)}×${money(r.price)}`)
                       .fontSize(11)
-                      .fontColor(GRAY)
+                      .fontColor(Theme.sub())
                   }
                   .alignItems(HorizontalAlign.End)
                 }
                 .width('100%')
                 .padding({ left: 14, right: 14, top: 10, bottom: 10 })
-                .backgroundColor('#ffffff')
+                .backgroundColor(Theme.card())
                 .onClick(() => {
                   if (this.selecting) {
                     this.toggleSelect(r.id)
@@ -476,7 +474,7 @@ export struct DetailPage {
         Column({ space: 8 }) {
           Text('暂无符合条件的记录')
             .fontSize(14)
-            .fontColor(GRAY)
+            .fontColor(Theme.sub())
         }
         .width('100%')
         .padding({ top: 40 })
@@ -484,7 +482,7 @@ export struct DetailPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#f7f8fa')
+    .backgroundColor(Theme.bg())
     .bindSheet(this.showExportSheet, this.exportSheet(), { height: 300 })
   }
 }

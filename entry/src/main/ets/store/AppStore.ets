@@ -4,6 +4,7 @@
  * 变更方法返回新引用快照，页面通过 @State doc 接收以触发 UI 刷新。
  */
 import { common } from '@kit.AbilityKit'
+import { window } from '@kit.ArkUI'
 import { DataStore } from '../db/Database'
 import { PrefStore } from '../db/PrefStore'
 import { BackupUtils } from '../utils/BackupUtils'
@@ -16,6 +17,7 @@ export class AppStore {
   doc: DataDoc = emptyDoc()
   ready: boolean = false
   private ctx: common.UIAbilityContext | null = null
+  private win: window.Window | null = null
 
   static getInstance(): AppStore {
     if (AppStore.instance === null) {
@@ -55,6 +57,33 @@ export class AppStore {
   /** 记录系统深浅色（EntryAbility 回调写入） */
   setSystemDark(dark: boolean): void {
     AppStorage.setOrCreate<boolean>('systemDark', dark)
+  }
+
+  /** 绑定主窗口（EntryAbility 传入，用于全局深浅色生效） */
+  setWindow(win: window.Window): void {
+    this.win = win
+  }
+
+  /**
+   * 将主题设置应用到系统窗口（状态栏 / 导航栏底色随深色模式切换）：
+   * dark -> 强制深色；light -> 强制浅色；auto -> 跟随系统（-1）。
+   */
+  applyThemeToWindow(): void {
+    if (this.win === null) {
+      return
+    }
+    try {
+      const s: AppSettings = this.doc.settings
+      let mode: number = -1
+      if (s.theme === 'dark') {
+        mode = 1
+      } else if (s.theme === 'light') {
+        mode = 0
+      }
+      this.win.setWindowColorMode(mode)
+    } catch (e) {
+      // 窗口模式设置失败不影响功能
+    }
   }
 
   // ---------- 持久化与备份 ----------

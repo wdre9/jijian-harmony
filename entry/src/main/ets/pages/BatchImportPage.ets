@@ -9,11 +9,9 @@ import { parseImportText } from '../utils/ImporterUtils'
 import { pickImageAndRecognize } from '../utils/OcrUtils'
 import { money, qty } from '../utils/FormatUtils'
 import { round, uid } from '../utils/FormatUtils'
+import { Theme } from '../common/Theme'
 
-const BLUE: string = '#1989fa'
-const GRAY: string = '#969799'
 const GREEN: string = '#36d399'
-const RED: string = '#ee0a24'
 
 @Component
 export struct BatchImportPage {
@@ -116,8 +114,8 @@ export struct BatchImportPage {
       title: '确认导入',
       message: `将导入 ${this.result.rows.length} 条记录，未解析 ${this.result.unparsed.length} 行（自动跳过）。确定？`,
       buttons: [
-        { text: '取消', color: GRAY },
-        { text: '导入', color: BLUE }
+        { text: '取消', color: Theme.sub() },
+        { text: '导入', color: Theme.blue() }
       ]
     })
     if (res.index !== 1) {
@@ -148,7 +146,7 @@ export struct BatchImportPage {
         Column({ space: 3 }) {
           Text('可导入')
             .fontSize(11)
-            .fontColor(GRAY)
+            .fontColor(Theme.sub())
           Text(String(this.result ? this.result.rows.length : 0))
             .fontSize(18)
             .fontWeight(FontWeight.Bold)
@@ -159,22 +157,22 @@ export struct BatchImportPage {
         Column({ space: 3 }) {
           Text('跳过/未解析')
             .fontSize(11)
-            .fontColor(GRAY)
+            .fontColor(Theme.sub())
           Text(String(this.result ? this.result.skippedCount + this.result.unparsed.length : 0))
             .fontSize(18)
             .fontWeight(FontWeight.Bold)
-            .fontColor(RED)
+            .fontColor(Theme.red())
         }
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
         Column({ space: 3 }) {
           Text('金额合计(元)')
             .fontSize(11)
-            .fontColor(GRAY)
+            .fontColor(Theme.sub())
           Text(money(this.totalAmountOfResult()))
             .fontSize(18)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#f67a2e')
+            .fontColor(Theme.orange())
         }
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
@@ -189,14 +187,14 @@ export struct BatchImportPage {
                 .fontSize(11)
                 .width(22)
                 .textAlign(TextAlign.Center)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
               Column({ space: 2 }) {
                 Text(`${r.date} ${r.productName} · ${r.processName}`)
                   .fontSize(13)
                   .maxLines(1)
                 Text(r.raw)
                   .fontSize(11)
-                  .fontColor(GRAY)
+                  .fontColor(Theme.sub())
                   .maxLines(1)
               }
               .alignItems(HorizontalAlign.Start)
@@ -207,13 +205,13 @@ export struct BatchImportPage {
                   .fontWeight(FontWeight.Medium)
                 Text(`${qty(r.quantity)} × ${money(r.price)}`)
                   .fontSize(11)
-                  .fontColor(GRAY)
+                  .fontColor(Theme.sub())
               }
               .alignItems(HorizontalAlign.End)
             }
             .width('100%')
             .padding(10)
-            .backgroundColor('#ffffff')
+            .backgroundColor(Theme.card())
             .borderRadius(8)
           }
         }, (r: ImportRow, idx: number) => `${idx}-${r.line}-${r.raw}`)
@@ -226,17 +224,17 @@ export struct BatchImportPage {
         Column({ space: 4 }) {
           Text(`未解析行（${this.result.unparsed.length}）：`)
             .fontSize(12)
-            .fontColor(RED)
+            .fontColor(Theme.red())
           ForEach(this.result.unparsed, (u: string, idx: number) => {
             Text(`${idx + 1}. ${u}`)
               .fontSize(11)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
               .maxLines(1)
           }, (u: string, idx: number) => `${idx}-${u}`)
         }
         .width('100%')
         .padding(10)
-        .backgroundColor('#fdf0f0')
+        .backgroundColor(Theme.redBg())
         .borderRadius(8)
         .alignItems(HorizontalAlign.Start)
       }
@@ -244,7 +242,7 @@ export struct BatchImportPage {
       Button('确认导入')
         .width('100%')
         .height(44)
-        .backgroundColor(BLUE)
+        .backgroundColor(Theme.blue())
         .enabled(!this.importing)
         .onClick(() => {
           this.doImport()
@@ -252,7 +250,7 @@ export struct BatchImportPage {
     }
     .width('100%')
     .padding(12)
-    .backgroundColor('#f7f8fa')
+    .backgroundColor(Theme.bg())
     .borderRadius(10)
     .alignItems(HorizontalAlign.Start)
   }
@@ -262,7 +260,7 @@ export struct BatchImportPage {
       Row() {
         Text('‹ 返回')
           .fontSize(15)
-          .fontColor(BLUE)
+          .fontColor(Theme.blue())
           .onClick(() => {
             router.back()
           })
@@ -273,7 +271,7 @@ export struct BatchImportPage {
         Blank()
         Text(this.ocrBusy ? '识别中…' : 'OCR 识别')
           .fontSize(14)
-          .fontColor(BLUE)
+          .fontColor(Theme.blue())
           .onClick(() => {
             this.doOcr()
           })
@@ -281,7 +279,7 @@ export struct BatchImportPage {
       .width('100%')
       .height(48)
       .padding({ left: 14, right: 14 })
-      .backgroundColor('#ffffff')
+      .backgroundColor(Theme.card())
 
       Scroll() {
         Column({ space: 10 }) {
@@ -290,7 +288,7 @@ export struct BatchImportPage {
             Row({ space: 8 }) {
               Text('工人（选填）')
                 .fontSize(12)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
               TextInput({ text: this.worker, placeholder: '默认工人' })
                 .layoutWeight(1)
                 .height(32)
@@ -302,12 +300,12 @@ export struct BatchImportPage {
             Row({ space: 8 }) {
               Text('班次')
                 .fontSize(12)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
               Text('白班')
                 .fontSize(12)
                 .padding({ left: 12, right: 12, top: 4, bottom: 4 })
-                .backgroundColor(this.shift === 'day' ? BLUE : '#ffffff')
-                .fontColor(this.shift === 'day' ? '#ffffff' : '#323233')
+                .backgroundColor(this.shift === 'day' ? Theme.blue() : Theme.card())
+                .fontColor(this.shift === 'day' ? Theme.card() : Theme.text())
                 .borderRadius(12)
                 .onClick(() => {
                   this.shift = 'day'
@@ -315,8 +313,8 @@ export struct BatchImportPage {
               Text('夜班')
                 .fontSize(12)
                 .padding({ left: 12, right: 12, top: 4, bottom: 4 })
-                .backgroundColor(this.shift === 'night' ? BLUE : '#ffffff')
-                .fontColor(this.shift === 'night' ? '#ffffff' : '#323233')
+                .backgroundColor(this.shift === 'night' ? Theme.blue() : Theme.card())
+                .fontColor(this.shift === 'night' ? Theme.card() : Theme.text())
                 .borderRadius(12)
                 .onClick(() => {
                   this.shift = 'night'
@@ -333,16 +331,16 @@ export struct BatchImportPage {
               Button('解析预览')
                 .layoutWeight(1)
                 .height(40)
-                .backgroundColor('#ffffff')
-                .fontColor(BLUE)
+                .backgroundColor(Theme.card())
+                .fontColor(Theme.blue())
                 .onClick(() => {
                   this.doParse()
                 })
               Button('清空')
                 .width(80)
                 .height(40)
-                .backgroundColor('#ffffff')
-                .fontColor(RED)
+                .backgroundColor(Theme.card())
+                .fontColor(Theme.red())
                 .onClick(() => {
                   this.text = ''
                   this.result = null
@@ -351,7 +349,7 @@ export struct BatchImportPage {
           }
           .width('100%')
           .padding(12)
-          .backgroundColor('#ffffff')
+          .backgroundColor(Theme.card())
           .borderRadius(10)
           .alignItems(HorizontalAlign.Start)
 
@@ -363,13 +361,13 @@ export struct BatchImportPage {
           Column({ space: 4 }) {
             Text('格式说明')
               .fontSize(13)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
             Text('每行一条：日期头（6/10、6月10日、2026/6/10）、四位货号作为产品名、数量×单价=金额 自动计算、工序名从行尾清洗；含「计时」的行自动跳过；无法解析的行会列入未解析清单，不会静默丢失。')
               .fontSize(12)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
               .lineHeight(18)
               .padding(10)
-              .backgroundColor('#ffffff')
+              .backgroundColor(Theme.card())
               .borderRadius(10)
           }
           .width('100%')
@@ -382,7 +380,7 @@ export struct BatchImportPage {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#f7f8fa')
+      .backgroundColor(Theme.bg())
     }
     .width('100%')
     .height('100%')

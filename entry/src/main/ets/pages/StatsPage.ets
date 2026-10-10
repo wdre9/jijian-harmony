@@ -1,26 +1,40 @@
 /**
- * 统计 Tab：多区间汇总指标、金额趋势折线图、产品占比饼图、工序/工人排行柱状图、统计长图导出
+ * 统计 Tab：多区间汇总指标、金额趋势（长区间按月聚合）、近7天趋势、产品占比、
+ * 班次对比、近6月对比、工序/工人排行、最高单日、统计长图导出、五表 Excel 导出
  */
 import { componentSnapshot, promptAction } from '@kit.ArkUI'
 import { image } from '@kit.ImageKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { abilityAccessCtrl, common } from '@kit.AbilityKit'
-import { fs } from '@kit.CoreFileKit'
+import { fs, documentViewPicker } from '@kit.CoreFileKit'
 import { BusinessError } from '@kit.BasicServicesKit'
 import { DataDoc, RankItem, ShareItem, TrendPoint } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import {
-  EnrichedRecord, enrichRecords, maxDayAmount, rankBy, sharesOf,
-  sumAmount, sumQty, trendByDay
+  EnrichedRecord, enrichRecords, shiftStats, ShiftStat, recent6Months, monthBuckets,
+  bestDayInfo, rankBy, sharesOf, sumAmount, sumQty, trendByDay
 } from '../utils/StatsUtils'
-import { todayStr, weekRangeOf } from '../utils/DateUtils'
+import { todayStr, weekRangeOf, lastNDaysRange } from '../utils/DateUtils'
 import { money, qty } from '../utils/FormatUtils'
 import { LineChart } from '../components/LineChart'
 import { BarChart } from '../components/BarChart'
 import { PieChart } from '../components/PieChart'
+import { RangeTabs, RangeTabOption } from '../components/RangeTabs'
+import { Theme } from '../common/Theme'
+import {
+  SheetData, buildXls, detailAoa, productSummaryAoa, processSummaryAoa,
+  workerSummaryAoa, daySummaryAoa, shiftSummaryAoa, monthSummaryAoa
+} from '../utils/ExporterUtils'
 
-const BLUE: string = '#1989fa'
-const GRAY: string = '#969799'
+const RANGE_OPTIONS: RangeTabOption[] = [
+  { key: 'week', label: '本周' },
+  { key: 'month', label: '本月' },
+  { key: 'lastMonth', label: '上月' },
+  { key: 'near30', label: '近30天' },
+  { key: 'near90', label: '近90天' },
+  { key: 'year', label: '年度' },
+  { key: 'custom', label: '自定义' }
+]
 
 @Component
 export struct StatsPage {
@@ -32,13 +46,13 @@ export struct StatsPage {
   @State rangeType: string = 'week'
   @State customStart: string = todayStr()
   @State customEnd: string = todayStr()
-  @State pickingStart: boolean = false
-  @State pickingEnd: boolean = false
+  @State showExportSheet: boolean = false
 
   private rangeStartEnd(): string[] {
     const today: string = todayStr()
     if (this.rangeType === 'week') {
-      return weekRangeOf(today)
+      const r = weekRangeOf(today)
+      return [r.start, r.end]
     }
     if (this.rangeType === 'month') {
       const ym: string = today.substring(0, 7)
@@ -60,11 +74,9 @@ export struct StatsPage {
       return [this.customStart, this.customEnd]
     }
     // near30 / near90
-    const days: number = this.rangeType === 'near30' ? 29 : 89
-    const d: Date = new Date(`${today}T00:00:00`)
-    d.setDate(d.getDate() - days)
-    const p = (n: number): string => (n < 10 ? `0${n}` : String(n))
-    return [`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`, today]
+    const n: number = this.rangeType === 'near30' ? 30 : 90
+    const r = lastNDaysRange(n)
+    return [r.start, r.end]
   }
 
   private rangeDays(): number {
@@ -78,6 +90,11 @@ export struct StatsPage {
     const r: string[] = this.rangeStartEnd()
     const all: EnrichedRecord[] = enrichRecords(this.doc.records, this.doc.products, this.doc.processes)
     return all.filter((x: EnrichedRecord) => x.date >= r[0] && x.date <= r[1])
+  }
+
+  /** 长区间（>62 天）按月份聚合展示 */
+  private longRange(): boolean {
+    return this.rangeDays() > 62
   }
 
   private total(): number {
@@ -100,13 +117,26 @@ export struct StatsPage {
     return this.qtySum() > 0 ? this.total() / this.qtySum() : 0
   }
 
-  private maxDay(): number {
-    return maxDayAmount(this.inRange())
+  /** 最高单日（金额 + 日期） */
+  private best(): { date: string, amount: number } {
+    return bestDayInfo(this.inRange())
   }
 
+  /** 趋势：长区间按月聚合，否则按日 */
   private trend(): TrendPoint[] {
     const r: string[] = this.rangeStartEnd()
+    if (this.longRange()) {
+      return monthBuckets(this.inRange(), r[0], r[1])
+    }
     return trendByDay(this.inRange(), r[0], r[1])
+  }
+
+  /** 近 7 天趋势（独立于当前区间） */
+  private last7(): TrendPoint[] {
+    const r = lastNDaysRange(7)
+    const all: EnrichedRecord[] = enrichRecords(this.doc.records, this.doc.products, this.doc.processes)
+    const list: EnrichedRecord[] = all.filter((x: EnrichedRecord) => x.date >= r.start && x.date <= r.end)
+    return trendByDay(list, r.start, r.end)
   }
 
   private productShares(): ShareItem[] {
@@ -121,8 +151,76 @@ export struct StatsPage {
     return rankBy(this.inRange(), (r: EnrichedRecord) => (r.worker || '未填'), 8)
   }
 
+  private shiftList(): ShiftStat[] {
+    return shiftStats(this.inRange())
+  }
+
+  /** 近 6 个月对比（全局近 6 月，不随区间） */
+  private recent6(): RankItem[] {
+    const all: EnrichedRecord[] = enrichRecords(this.doc.records, this.doc.products, this.doc.processes)
+    const pts: TrendPoint[] = recent6Months(all)
+    const items: RankItem[] = []
+    for (let i = 0; i < pts.length; i++) {
+      items.push({ name: pts[i].date.substring(5) + '月', amount: pts[i].amount, quantity: 0 })
+    }
+    return items
+  }
+
   private toast(msg: string): void {
     promptAction.showToast({ message: msg, duration: 2000 })
+  }
+
+  /** 五表 + 明细 + 按月 Excel 导出（原生 SpreadsheetML .xls） */
+  private async exportExcel(): Promise<void> {
+    this.showExportSheet = false
+    const rows: EnrichedRecord[] = this.inRange()
+    if (rows.length === 0) {
+      this.toast('当前区间没有可导出的记录')
+      return
+    }
+    const r: string[] = this.rangeStartEnd()
+    const total: number = this.total()
+    const sheets: SheetData[] = [
+      { name: '计件明细', aoa: detailAoa(rows) },
+      { name: '产品汇总', aoa: productSummaryAoa(rows) },
+      { name: '工序汇总', aoa: processSummaryAoa(rows) },
+      { name: '工人汇总', aoa: workerSummaryAoa(rows) },
+      { name: '日期汇总', aoa: daySummaryAoa(rows) },
+      { name: '班次汇总', aoa: shiftSummaryAoa(rows) },
+      { name: '按月汇总', aoa: monthSummaryAoa(rows, r[0], r[1]) },
+      {
+        name: '汇总',
+        aoa: [
+          ['计件统计汇总'],
+          ['区间', `${r[0]} ~ ${r[1]}`],
+          ['项目', '数值'],
+          ['合计金额(元)', total],
+          ['件数', qty(this.qtySum())],
+          ['笔数', rows.length],
+          ['日均金额(元)', money(this.dailyAvg())],
+          ['平均单价(元)', money(this.avgPrice())],
+          ['最高单日', `${this.best().date} ${money(this.best().amount)}`],
+          ['导出时间', todayStr()]
+        ]
+      }
+    ]
+    const fileName: string = `计件统计-${todayStr()}.xls`
+    try {
+      const picker = new documentViewPicker.DocumentViewPicker()
+      const opt = new documentViewPicker.DocumentSaveOptions()
+      opt.newFileNames = [fileName]
+      const uris: Array<string> = await picker.save(opt)
+      if (uris.length === 0) {
+        return
+      }
+      const uri: string = uris[0]
+      const file = fs.openSync(uri, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE)
+      fs.writeSync(file.fd, buildXls(sheets))
+      fs.closeSync(file)
+      this.toast(`已导出 ${fileName}`)
+    } catch (e) {
+      this.toast('导出失败，请检查文件权限')
+    }
   }
 
   /** 截图统计区域并保存到相册 */
@@ -167,24 +265,11 @@ export struct StatsPage {
   }
 
   @Builder
-  rangeChip(key: string, label: string) {
-    Text(label)
-      .fontSize(12)
-      .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-      .backgroundColor(this.rangeType === key ? BLUE : '#ffffff')
-      .fontColor(this.rangeType === key ? '#ffffff' : '#323233')
-      .borderRadius(12)
-      .onClick(() => {
-        this.rangeType = key
-      })
-  }
-
-  @Builder
-  metricCard(label: string, value: string, color: string = '#323233') {
+  metricCard(label: string, value: string, color: string = Theme.text()) {
     Column({ space: 4 }) {
       Text(label)
         .fontSize(11)
-        .fontColor(GRAY)
+        .fontColor(Theme.sub())
       Text(value)
         .fontSize(16)
         .fontWeight(FontWeight.Bold)
@@ -194,7 +279,7 @@ export struct StatsPage {
     .alignItems(HorizontalAlign.Start)
     .layoutWeight(1)
     .padding(12)
-    .backgroundColor('#ffffff')
+    .backgroundColor(Theme.card())
     .borderRadius(10)
   }
 
@@ -204,12 +289,13 @@ export struct StatsPage {
       Text(title)
         .fontSize(14)
         .fontWeight(FontWeight.Medium)
+        .fontColor(Theme.text())
       chart()
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .padding(12)
-    .backgroundColor('#ffffff')
+    .backgroundColor(Theme.card())
     .borderRadius(10)
   }
 
@@ -220,20 +306,80 @@ export struct StatsPage {
         .fill(color)
       Text(name)
         .fontSize(12)
-        .fontColor('#323233')
+        .fontColor(Theme.text())
         .layoutWeight(1)
         .maxLines(1)
       Text(`${Math.round(ratio * 100)}%`)
         .fontSize(11)
-        .fontColor(GRAY)
+        .fontColor(Theme.sub())
       Text(money(amount))
         .fontSize(12)
-        .fontColor('#323233')
+        .fontColor(Theme.text())
         .width(70)
         .textAlign(TextAlign.End)
     }
     .width('100%')
     .margin({ top: 4, bottom: 4 })
+  }
+
+  @Builder
+  rankRow(r: RankItem, idx: number) {
+    Row({ space: 6 }) {
+      Text(`${idx + 1}`)
+        .fontSize(12)
+        .width(20)
+        .height(20)
+        .textAlign(TextAlign.Center)
+        .backgroundColor(idx < 3 ? Theme.weakBlue() : Theme.chip())
+        .fontColor(idx === 0 ? Theme.orange() : Theme.text())
+        .borderRadius(10)
+      Text(r.name)
+        .fontSize(12)
+        .fontColor(Theme.text())
+        .layoutWeight(1)
+        .maxLines(1)
+      Text(`${qty(r.quantity)} 件`)
+        .fontSize(11)
+        .fontColor(Theme.sub())
+      Text(money(r.amount))
+        .fontSize(12)
+        .fontColor(Theme.text())
+        .width(70)
+        .textAlign(TextAlign.End)
+    }
+    .width('100%')
+    .margin({ top: 3, bottom: 3 })
+  }
+
+  @Builder
+  exportSheet() {
+    Column({ space: 6 }) {
+      Text('导出 Excel（.xls 多表）')
+        .fontSize(16)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(Theme.text())
+        .padding({ top: 16, bottom: 10 })
+      Text('包含：计件明细 / 产品汇总 / 工序汇总 / 工人汇总 / 日期汇总 / 班次汇总 / 按月汇总 / 区间汇总')
+        .fontSize(12)
+        .fontColor(Theme.sub())
+        .padding({ bottom: 10 })
+      Text('确认导出当前区间统计')
+        .fontSize(14)
+        .fontColor(Theme.blue())
+        .width('100%')
+        .textAlign(TextAlign.Center)
+        .padding(12)
+        .backgroundColor(Theme.bg())
+        .borderRadius(8)
+        .onClick(() => {
+          this.exportExcel()
+        })
+      Blank().height(20)
+    }
+    .width('100%')
+    .height('100%')
+    .padding(12)
+    .backgroundColor(Theme.card())
   }
 
   build() {
@@ -242,10 +388,18 @@ export struct StatsPage {
         Text('统计')
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
+          .fontColor(Theme.text())
         Blank()
+        Text('导出Excel')
+          .fontSize(14)
+          .fontColor(Theme.blue())
+          .onClick(() => {
+            this.showExportSheet = true
+          })
+        Text('  ')
         Text('导出长图')
           .fontSize(14)
-          .fontColor(BLUE)
+          .fontColor(Theme.blue())
           .onClick(() => {
             this.saveSnapshot()
           })
@@ -253,33 +407,23 @@ export struct StatsPage {
       .width('100%')
       .height(48)
       .padding({ left: 14, right: 14 })
-      .backgroundColor('#ffffff')
+      .backgroundColor(Theme.card())
 
       Scroll() {
         Column({ space: 10 }) {
           // 范围选择
           Column({ space: 8 }) {
-            Scroll() {
-              Row({ space: 8 }) {
-                this.rangeChip('week', '本周')
-                this.rangeChip('month', '本月')
-                this.rangeChip('lastMonth', '上月')
-                this.rangeChip('near30', '近30天')
-                this.rangeChip('near90', '近90天')
-                this.rangeChip('year', '年度')
-                this.rangeChip('custom', '自定义')
-              }
-            }
-            .scrollable(ScrollDirection.Horizontal)
-            .scrollBar(BarState.Off)
-            .width('100%')
+            RangeTabs({ options: RANGE_OPTIONS, selectedKey: this.rangeType, onSelect: (k: string) => {
+              this.rangeType = k
+            } })
 
             if (this.rangeType === 'custom') {
               Row({ space: 10 }) {
                 Text(`开始 ${this.customStart}`)
                   .fontSize(12)
+                  .fontColor(Theme.text())
                   .padding(6)
-                  .backgroundColor('#f2f3f5')
+                  .backgroundColor(Theme.chip())
                   .borderRadius(6)
                   .onClick(() => {
                     DatePickerDialog.show({
@@ -297,8 +441,9 @@ export struct StatsPage {
                   })
                 Text(`结束 ${this.customEnd}`)
                   .fontSize(12)
+                  .fontColor(Theme.text())
                   .padding(6)
-                  .backgroundColor('#f2f3f5')
+                  .backgroundColor(Theme.chip())
                   .borderRadius(6)
                   .onClick(() => {
                     DatePickerDialog.show({
@@ -316,12 +461,12 @@ export struct StatsPage {
           }
           .width('100%')
           .padding(10)
-          .backgroundColor('#ffffff')
+          .backgroundColor(Theme.card())
           .borderRadius(10)
 
           // 指标
           Row({ space: 10 }) {
-            this.metricCard('合计金额(元)', money(this.total()), '#f67a2e')
+            this.metricCard('合计金额(元)', money(this.total()), Theme.orange())
             this.metricCard('件数', qty(this.qtySum()))
             this.metricCard('笔数', String(this.count()))
           }
@@ -329,19 +474,42 @@ export struct StatsPage {
           Row({ space: 10 }) {
             this.metricCard('日均金额(元)', money(this.dailyAvg()))
             this.metricCard('平均单价(元)', money(this.avgPrice()))
-            this.metricCard('最高单日(元)', money(this.maxDay()))
+            this.metricCard('最高单日(元)', money(this.best().amount))
           }
           .width('100%')
 
-          // 趋势
-          this.chartCard('金额趋势', () => {
-            LineChart({ points: this.trend() })
+          // 最高单日日期
+          if (this.best().amount > 0) {
+            Row() {
+              Text(`最高单日：${this.best().date}  ${money(this.best().amount)} 元`)
+                .fontSize(12)
+                .fontColor(Theme.orange())
+              Blank()
+              Text(`${qty(maxDayQty(this.inRange(), this.best().date))} 件`)
+                .fontSize(12)
+                .fontColor(Theme.sub())
+            }
+            .width('100%')
+            .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+            .backgroundColor(Theme.orangeBg())
+            .borderRadius(8)
+          }
+
+          // 近 7 天趋势
+          this.chartCard('近7天趋势', () => {
+            LineChart({ points: this.last7(), dark: Theme.isDark() })
+              .width('100%')
+          })
+
+          // 金额趋势（长区间按月聚合）
+          this.chartCard(this.longRange() ? '金额趋势（按月）' : '金额趋势', () => {
+            LineChart({ points: this.trend(), dark: Theme.isDark() })
               .width('100%')
           })
 
           // 产品占比
           this.chartCard('产品金额占比', () => {
-            PieChart({ items: this.productShares() })
+            PieChart({ items: this.productShares(), dark: Theme.isDark() })
               .width('100%')
             Column({ space: 0 }) {
               ForEach(this.productShares(), (s: ShareItem, idx: number) => {
@@ -352,35 +520,73 @@ export struct StatsPage {
             .width('100%')
           })
 
+          // 班次对比
+          this.chartCard('班次对比', () => {
+            Column({ space: 8 }) {
+              ForEach(this.shiftList(), (s: ShiftStat) => {
+                Row({ space: 8 }) {
+                  Text(s.name)
+                    .fontSize(13)
+                    .fontColor(Theme.text())
+                    .width(48)
+                  Column({ space: 4 }) {
+                    LinearProgress({ value: s.amount, total: Math.max(this.shiftList()[0].amount + this.shiftList()[1].amount, 1) })
+                      .width('100%')
+                      .height(8)
+                      .color(s.name === '夜班' ? Theme.orange() : Theme.blue())
+                      .backgroundColor(Theme.line())
+                    Row({ space: 6 }) {
+                      Text(money(s.amount))
+                        .fontSize(12)
+                        .fontColor(s.name === '夜班' ? Theme.orange() : Theme.blue())
+                      Text(`${qty(s.quantity)} 件 · ${s.count} 笔`)
+                        .fontSize(11)
+                        .fontColor(Theme.sub())
+                    }
+                    .width('100%')
+                  }
+                  .layoutWeight(1)
+                }
+                .width('100%')
+              }, (s: ShiftStat) => s.name)
+            }
+            .width('100%')
+          })
+
+          // 近 6 月对比
+          this.chartCard('近6月对比', () => {
+            BarChart({ items: this.recent6(), dark: Theme.isDark() })
+              .width('100%')
+            Column({ space: 0 }) {
+              ForEach(this.recent6(), (r: RankItem, idx: number) => {
+                Row({ space: 6 }) {
+                  Text(r.name)
+                    .fontSize(12)
+                    .fontColor(Theme.text())
+                    .width(48)
+                  Text(money(r.amount))
+                    .fontSize(12)
+                    .fontColor(Theme.blue())
+                    .layoutWeight(1)
+                  Text(qty(r.quantity) + ' 件')
+                    .fontSize(11)
+                    .fontColor(Theme.sub())
+                    .visibility(Visibility.Hidden)
+                }
+                .width('100%')
+                .margin({ top: 2, bottom: 2 })
+              }, (r: RankItem, idx: number) => `${r.name}-${idx}`)
+            }
+            .width('100%')
+          })
+
           // 工序排行
           this.chartCard('工序排行（金额）', () => {
-            BarChart({ items: this.processRank() })
+            BarChart({ items: this.processRank(), dark: Theme.isDark() })
               .width('100%')
             Column({ space: 0 }) {
               ForEach(this.processRank(), (r: RankItem, idx: number) => {
-                Row({ space: 6 }) {
-                  Text(`${idx + 1}`)
-                    .fontSize(12)
-                    .width(20)
-                    .height(20)
-                    .textAlign(TextAlign.Center)
-                    .backgroundColor(idx < 3 ? '#e8f3ff' : '#f2f3f5')
-                    .fontColor(idx === 0 ? '#f67a2e' : '#323233')
-                    .borderRadius(10)
-                  Text(r.name)
-                    .fontSize(12)
-                    .layoutWeight(1)
-                    .maxLines(1)
-                  Text(`${qty(r.quantity)} 件`)
-                    .fontSize(11)
-                    .fontColor(GRAY)
-                  Text(money(r.amount))
-                    .fontSize(12)
-                    .width(70)
-                    .textAlign(TextAlign.End)
-                }
-                .width('100%')
-                .margin({ top: 3, bottom: 3 })
+                this.rankRow(r, idx)
               }, (r: RankItem, idx: number) => `${r.name}-${idx}`)
             }
             .width('100%')
@@ -388,33 +594,11 @@ export struct StatsPage {
 
           // 工人排行
           this.chartCard('工人排行（金额）', () => {
-            BarChart({ items: this.workerRank() })
+            BarChart({ items: this.workerRank(), dark: Theme.isDark() })
               .width('100%')
             Column({ space: 0 }) {
               ForEach(this.workerRank(), (r: RankItem, idx: number) => {
-                Row({ space: 6 }) {
-                  Text(`${idx + 1}`)
-                    .fontSize(12)
-                    .width(20)
-                    .height(20)
-                    .textAlign(TextAlign.Center)
-                    .backgroundColor(idx < 3 ? '#e8f3ff' : '#f2f3f5')
-                    .fontColor(idx === 0 ? '#f67a2e' : '#323233')
-                    .borderRadius(10)
-                  Text(r.name)
-                    .fontSize(12)
-                    .layoutWeight(1)
-                    .maxLines(1)
-                  Text(`${qty(r.quantity)} 件`)
-                    .fontSize(11)
-                    .fontColor(GRAY)
-                  Text(money(r.amount))
-                    .fontSize(12)
-                    .width(70)
-                    .textAlign(TextAlign.End)
-                }
-                .width('100%')
-                .margin({ top: 3, bottom: 3 })
+                this.rankRow(r, idx)
               }, (r: RankItem, idx: number) => `${r.name}-${idx}`)
             }
             .width('100%')
@@ -427,10 +611,22 @@ export struct StatsPage {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#f7f8fa')
+      .backgroundColor(Theme.bg())
+      .bindSheet(this.showExportSheet, this.exportSheet(), { height: 300 })
     }
     .width('100%')
     .height('100%')
     .id('statsArea')
   }
+}
+
+/** 某日期件数合计 */
+function maxDayQty(list: EnrichedRecord[], date: string): number {
+  let q: number = 0
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].date === date) {
+      q += list[i].quantity
+    }
+  }
+  return q
 }

@@ -6,9 +6,8 @@ import { DataDoc, Process, Product } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import { money } from '../utils/FormatUtils'
 import { sumAmount, enrichRecords, EnrichedRecord } from '../utils/StatsUtils'
+import { Theme } from '../common/Theme'
 
-const BLUE: string = '#1989fa'
-const GRAY: string = '#969799'
 
 @Component
 export struct ProductProcessPage {
@@ -86,8 +85,8 @@ export struct ProductProcessPage {
       title: '删除产品',
       message: `删除「${p.name}」将同时删除其工序与相关记录，确定？`,
       buttons: [
-        { text: '取消', color: GRAY },
-        { text: '删除', color: '#ee0a24' }
+        { text: '取消', color: Theme.sub() },
+        { text: '删除', color: Theme.red() }
       ]
     })
     if (res.index === 1) {
@@ -155,8 +154,8 @@ export struct ProductProcessPage {
       title: '删除工序',
       message: `确定删除工序「${c.name}」？历史记录保留。`,
       buttons: [
-        { text: '取消', color: GRAY },
-        { text: '删除', color: '#ee0a24' }
+        { text: '取消', color: Theme.sub() },
+        { text: '删除', color: Theme.red() }
       ]
     })
     if (res.index === 1) {
@@ -208,7 +207,7 @@ export struct ProductProcessPage {
       Button('保存')
         .width('100%')
         .height(40)
-        .backgroundColor(BLUE)
+        .backgroundColor(Theme.blue())
         .onClick(() => {
           this.doAddProduct()
         })
@@ -217,7 +216,7 @@ export struct ProductProcessPage {
     .width('100%')
     .height('100%')
     .padding(14)
-    .backgroundColor('#ffffff')
+    .backgroundColor(Theme.card())
   }
 
   @Builder
@@ -233,8 +232,8 @@ export struct ProductProcessPage {
             Text(p.name)
               .fontSize(12)
               .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-              .backgroundColor(this.cProductId === p.id ? BLUE : '#f2f3f5')
-              .fontColor(this.cProductId === p.id ? '#ffffff' : '#323233')
+              .backgroundColor(this.cProductId === p.id ? Theme.blue() : Theme.chip())
+              .fontColor(this.cProductId === p.id ? Theme.card() : Theme.text())
               .borderRadius(12)
               .onClick(() => {
                 this.cProductId = p.id
@@ -266,7 +265,7 @@ export struct ProductProcessPage {
       Button('保存')
         .width('100%')
         .height(40)
-        .backgroundColor(BLUE)
+        .backgroundColor(Theme.blue())
         .onClick(() => {
           this.doSaveProcess()
         })
@@ -275,7 +274,7 @@ export struct ProductProcessPage {
     .width('100%')
     .height('100%')
     .padding(14)
-    .backgroundColor('#ffffff')
+    .backgroundColor(Theme.card())
   }
 
   @Builder
@@ -293,14 +292,14 @@ export struct ProductProcessPage {
                   Text(p.spec)
                     .fontSize(11)
                     .padding({ left: 6, right: 6, top: 1, bottom: 1 })
-                    .backgroundColor('#e8f3ff')
-                    .fontColor(BLUE)
+                    .backgroundColor(Theme.weakBlue())
+                    .fontColor(Theme.blue())
                     .borderRadius(8)
                 }
               }
               Text(`${this.processCount(p.id)} 道工序 · ${this.recordCountOfProduct(p.id)} 条记录`)
                 .fontSize(12)
-                .fontColor(GRAY)
+                .fontColor(Theme.sub())
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1)
@@ -308,10 +307,10 @@ export struct ProductProcessPage {
               Text(money(this.amountOfProduct(p.id)))
                 .fontSize(15)
                 .fontWeight(FontWeight.Bold)
-                .fontColor('#323233')
+                .fontColor(Theme.text())
               Text('删除')
                 .fontSize(11)
-                .fontColor('#ee0a24')
+                .fontColor(Theme.red())
                 .onClick(() => {
                   this.doDeleteProduct(p)
                 })
@@ -319,11 +318,11 @@ export struct ProductProcessPage {
             .alignItems(HorizontalAlign.End)
             Text('›')
               .fontSize(18)
-              .fontColor('#c8c9cc')
+              .fontColor(Theme.divider())
           }
           .width('100%')
           .padding(14)
-          .backgroundColor('#ffffff')
+          .backgroundColor(Theme.card())
           .borderRadius(10)
           .onClick(() => {
             router.pushUrl({ url: 'pages/ProductDetailPage', params: { id: p.id } })
@@ -345,8 +344,8 @@ export struct ProductProcessPage {
           Text('全部')
             .fontSize(12)
             .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-            .backgroundColor(this.filterProductId === '' ? BLUE : '#ffffff')
-            .fontColor(this.filterProductId === '' ? '#ffffff' : '#323233')
+            .backgroundColor(this.filterProductId === '' ? Theme.blue() : Theme.card())
+            .fontColor(this.filterProductId === '' ? Theme.card() : Theme.text())
             .borderRadius(12)
             .onClick(() => {
               this.filterProductId = ''
@@ -355,8 +354,8 @@ export struct ProductProcessPage {
             Text(p.name)
               .fontSize(12)
               .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-              .backgroundColor(this.filterProductId === p.id ? BLUE : '#ffffff')
-              .fontColor(this.filterProductId === p.id ? '#ffffff' : '#323233')
+              .backgroundColor(this.filterProductId === p.id ? Theme.blue() : Theme.card())
+              .fontColor(this.filterProductId === p.id ? Theme.card() : Theme.text())
               .borderRadius(12)
               .onClick(() => {
                 this.filterProductId = p.id
@@ -378,48 +377,48 @@ export struct ProductProcessPage {
                   Text(c.name)
                     .fontSize(15)
                     .fontWeight(FontWeight.Medium)
-                    .fontColor(c.active ? '#323233' : GRAY)
+                    .fontColor(c.active ? Theme.text() : Theme.sub())
                   if (this.productOf(c.productId)) {
                     Text(this.productOf(c.productId)!.name)
                       .fontSize(11)
                       .padding({ left: 6, right: 6, top: 1, bottom: 1 })
-                      .backgroundColor('#f2f3f5')
-                      .fontColor(GRAY)
+                      .backgroundColor(Theme.chip())
+                      .fontColor(Theme.sub())
                       .borderRadius(8)
                   }
                   if (!c.active) {
                     Text('停用')
                       .fontSize(10)
-                      .fontColor('#ee0a24')
+                      .fontColor(Theme.red())
                   }
                 }
                 Text(money(c.price) + ' / 件')
                   .fontSize(12)
-                  .fontColor(GRAY)
+                  .fontColor(Theme.sub())
               }
               .alignItems(HorizontalAlign.Start)
               .layoutWeight(1)
               Toggle({ type: ToggleType.Switch, isOn: c.active })
-                .selectedColor(BLUE)
+                .selectedColor(Theme.blue())
                 .onChange((on: boolean) => {
                   this.toggleProcessActive(c)
                 })
               Text('编辑')
                 .fontSize(12)
-                .fontColor(BLUE)
+                .fontColor(Theme.blue())
                 .onClick(() => {
                   this.openEditProcess(c)
                 })
               Text('删除')
                 .fontSize(12)
-                .fontColor('#ee0a24')
+                .fontColor(Theme.red())
                 .onClick(() => {
                   this.doDeleteProcess(c)
                 })
             }
             .width('100%')
             .padding(14)
-            .backgroundColor('#ffffff')
+            .backgroundColor(Theme.card())
             .borderRadius(10)
           }
         }, (c: Process) => c.id)
@@ -438,7 +437,7 @@ export struct ProductProcessPage {
       Row() {
         Text('‹ 返回')
           .fontSize(15)
-          .fontColor(BLUE)
+          .fontColor(Theme.blue())
           .onClick(() => {
             router.back()
           })
@@ -449,7 +448,7 @@ export struct ProductProcessPage {
         Blank()
         Text(this.tab === 'product' ? '新增产品' : '新增工序')
           .fontSize(14)
-          .fontColor(BLUE)
+          .fontColor(Theme.blue())
           .onClick(() => {
             if (this.tab === 'product') {
               this.openAddProduct()
@@ -461,7 +460,7 @@ export struct ProductProcessPage {
       .width('100%')
       .height(48)
       .padding({ left: 14, right: 14 })
-      .backgroundColor('#ffffff')
+      .backgroundColor(Theme.card())
 
       // 分段
       Row({ space: 6 }) {
@@ -470,8 +469,8 @@ export struct ProductProcessPage {
           .width(90)
           .height(32)
           .textAlign(TextAlign.Center)
-          .backgroundColor(this.tab === 'product' ? BLUE : '#f2f3f5')
-          .fontColor(this.tab === 'product' ? '#ffffff' : '#323233')
+          .backgroundColor(this.tab === 'product' ? Theme.blue() : Theme.chip())
+          .fontColor(this.tab === 'product' ? Theme.card() : Theme.text())
           .borderRadius(16)
           .onClick(() => {
             this.tab = 'product'
@@ -481,8 +480,8 @@ export struct ProductProcessPage {
           .width(90)
           .height(32)
           .textAlign(TextAlign.Center)
-          .backgroundColor(this.tab === 'process' ? BLUE : '#f2f3f5')
-          .fontColor(this.tab === 'process' ? '#ffffff' : '#323233')
+          .backgroundColor(this.tab === 'process' ? Theme.blue() : Theme.chip())
+          .fontColor(this.tab === 'process' ? Theme.card() : Theme.text())
           .borderRadius(16)
           .onClick(() => {
             this.tab = 'process'
@@ -498,7 +497,7 @@ export struct ProductProcessPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#f7f8fa')
+    .backgroundColor(Theme.bg())
     .bindSheet(this.showProductSheet, this.productSheet(), { height: 360 })
     .bindSheet(this.showProcessSheet, this.processSheet(), { height: 460 })
   }

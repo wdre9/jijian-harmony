@@ -9,9 +9,8 @@ import { AppStore } from '../store/AppStore'
 import { detailCsv, buildXls, SheetData, detailAoa, countText } from '../utils/ExporterUtils'
 import { EnrichedRecord, enrichRecords } from '../utils/StatsUtils'
 import { todayStr } from '../utils/DateUtils'
+import { Theme } from '../common/Theme'
 
-const BLUE: string = '#1989fa'
-const GRAY: string = '#969799'
 
 @Component
 export struct DataPage {
@@ -99,8 +98,8 @@ export struct DataPage {
       title: '导入备份',
       message: '导入将覆盖当前全部数据，确定继续？',
       buttons: [
-        { text: '取消', color: GRAY },
-        { text: '导入', color: BLUE }
+        { text: '取消', color: Theme.sub() },
+        { text: '导入', color: Theme.blue() }
       ]
     })
     if (res.index !== 1) {
@@ -125,8 +124,8 @@ export struct DataPage {
       title: '载入演示数据',
       message: '将覆盖当前全部数据并写入演示记录（近 14 天），确定？',
       buttons: [
-        { text: '取消', color: GRAY },
-        { text: '载入', color: BLUE }
+        { text: '取消', color: Theme.sub() },
+        { text: '载入', color: Theme.blue() }
       ]
     })
     if (res.index === 1) {
@@ -140,8 +139,8 @@ export struct DataPage {
       title: '清空数据',
       message: '将删除全部产品、工序、记录与工人，此操作不可恢复，确定？',
       buttons: [
-        { text: '取消', color: GRAY },
-        { text: '清空', color: '#ee0a24' }
+        { text: '取消', color: Theme.sub() },
+        { text: '清空', color: Theme.red() }
       ]
     })
     if (res.index === 1) {
@@ -155,7 +154,7 @@ export struct DataPage {
     Column({ space: 0 }) {
       Text(title)
         .fontSize(13)
-        .fontColor(GRAY)
+        .fontColor(Theme.sub())
         .padding({ left: 4, top: 12, bottom: 6 })
       Column({ space: 0 }) {
         ForEach(children, (key: string) => {
@@ -165,12 +164,12 @@ export struct DataPage {
               .layoutWeight(1)
             Text('›')
               .fontSize(16)
-              .fontColor('#c8c9cc')
+              .fontColor(Theme.divider())
           }
           .width('100%')
           .height(44)
           .padding({ left: 14, right: 14 })
-          .backgroundColor('#ffffff')
+          .backgroundColor(Theme.card())
           .onClick(() => {
             this.onTap(key)
           })
@@ -236,7 +235,7 @@ export struct DataPage {
       Row() {
         Text('‹ 返回')
           .fontSize(15)
-          .fontColor(BLUE)
+          .fontColor(Theme.blue())
           .onClick(() => {
             router.back()
           })
@@ -247,12 +246,12 @@ export struct DataPage {
         Blank()
         Text(`${this.doc.records.length} 条记录`)
           .fontSize(13)
-          .fontColor(GRAY)
+          .fontColor(Theme.sub())
       }
       .width('100%')
       .height(48)
       .padding({ left: 14, right: 14 })
-      .backgroundColor('#ffffff')
+      .backgroundColor(Theme.card())
 
       Scroll() {
         Column({ space: 8 }) {
@@ -263,14 +262,14 @@ export struct DataPage {
           Column({ space: 4 }) {
             Text('数据安全说明')
               .fontSize(13)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
               .padding({ left: 4, top: 10 })
             Text('所有数据仅保存在本机沙箱与关系型数据库中，不联网、不上传；自动备份 JSON 写入应用沙箱「计件自动备份」目录，滚动保留最近 14 份。')
               .fontSize(12)
-              .fontColor(GRAY)
+              .fontColor(Theme.sub())
               .lineHeight(18)
               .padding(10)
-              .backgroundColor('#ffffff')
+              .backgroundColor(Theme.card())
               .borderRadius(10)
           }
           .width('100%')
@@ -283,7 +282,7 @@ export struct DataPage {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#f7f8fa')
+      .backgroundColor(Theme.bg())
     }
     .width('100%')
     .height('100%')
