@@ -1,14 +1,3 @@
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: d5d87225b25c7ff9ce7972807796c3bd_9c19e40bc48d11f197b3525400248c00
-    ReservedCode1: lOWkj/ZtgfjF+vwCnMWa1p0wmJ2MozTfgQJpMSf1SP7fk0FW9rMIzqrNQ+jA81KLCbT1wOGsE7nVFZwyqFWxz01GZAm8Qd086DbsG7IGaThcpS3vOAR++Bmo8CINIXmqNnwHpS6eaZaK/KlV+/uNy/Ju2Zs6TDhDyNNVIqDPWm/9d1Jfo7dIimiReoU=
-    ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: d5d87225b25c7ff9ce7972807796c3bd_9c19e40bc48d11f197b3525400248c00
-    ReservedCode2: lOWkj/ZtgfjF+vwCnMWa1p0wmJ2MozTfgQJpMSf1SP7fk0FW9rMIzqrNQ+jA81KLCbT1wOGsE7nVFZwyqFWxz01GZAm8Qd086DbsG7IGaThcpS3vOAR++Bmo8CINIXmqNnwHpS6eaZaK/KlV+/uNy/Ju2Zs6TDhDyNNVIqDPWm/9d1Jfo7dIimiReoU=
----
-
 # 计件 · Jijian (HarmonyOS NEXT)
 
 计件工资记账助手 —— HarmonyOS NEXT 原生应用（ArkTS / ArkUI），本地优先、离线可用、数据不出本机。
