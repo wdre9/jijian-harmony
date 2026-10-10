@@ -285,7 +285,7 @@ export struct StatsPage {
   }
 
   @Builder
-  chartCard(title: string, chart: CustomBuilder) {
+  chartCard(title: string, chart: () => void) {
     Column({ space: 8 }) {
       Text(title)
         .fontSize(14)
@@ -605,25 +605,25 @@ export struct StatsPage {
           }
 
           // 近 7 天趋势
-          this.chartCard('近7天趋势', this.last7Chart)
+          this.chartCard('近7天趋势', () => { this.last7Chart() })
 
           // 金额趋势（长区间按月聚合）
-          this.chartCard(this.longRange() ? '金额趋势（按月）' : '金额趋势', this.trendChart)
+          this.chartCard(this.longRange() ? '金额趋势（按月）' : '金额趋势', () => { this.trendChart() })
 
           // 产品占比
-          this.chartCard('产品金额占比', this.productShareChart)
+          this.chartCard('产品金额占比', () => { this.productShareChart() })
 
           // 班次对比
-          this.chartCard('班次对比', this.shiftCompareChart)
+          this.chartCard('班次对比', () => { this.shiftCompareChart() })
 
           // 近 6 月对比
-          this.chartCard('近6月对比', this.recent6Chart)
+          this.chartCard('近6月对比', () => { this.recent6Chart() })
 
           // 工序排行
-          this.chartCard('工序排行（金额）', this.processRankChart)
+          this.chartCard('工序排行（金额）', () => { this.processRankChart() })
 
           // 工人排行
-          this.chartCard('工人排行（金额）', this.workerRankChart)
+          this.chartCard('工人排行（金额）', () => { this.workerRankChart() })
 
           Blank().height(20)
         }

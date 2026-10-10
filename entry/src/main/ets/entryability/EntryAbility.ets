@@ -31,7 +31,7 @@ export default class EntryAbility extends UIAbility {
       })
     // 读取初始系统深浅色
     try {
-      const cm: ConfigurationConstant.ColorMode = this.context.config.colorMode
+      const cm: ConfigurationConstant.ColorMode = this.context.config.colorMode ?? ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET
       store.setSystemDark(cm === ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
       // 绑定主窗口，用于主题切换时修改窗口颜色模式
       const win: window.Window = windowStage.getMainWindowSync()

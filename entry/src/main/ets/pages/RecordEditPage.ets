@@ -258,21 +258,6 @@ struct RecordEditPage {
     .backgroundColor(Theme.bg())
   }
 
-  @Builder
-  fieldCard(label: string, content: CustomBuilder) {
-    Column() {
-      Text(label)
-        .fontSize(13)
-        .fontColor(Theme.sub())
-      Blank()
-      content()
-    }
-    .width('100%')
-    .padding(14)
-    .backgroundColor(Theme.card())
-    .borderRadius(10)
-  }
-
   build() {
     Column() {
       this.header()
