@@ -6,7 +6,7 @@ import { router, promptAction } from '@kit.ArkUI'
 import { DataDoc, Product, Worker } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import { EnrichedRecord, enrichRecords, groupByDate, sumAmount, sumQty } from '../utils/StatsUtils'
-import { todayStr, weekRangeOf } from '../utils/DateUtils'
+import { DateRange, todayStr, weekRangeOf } from '../utils/DateUtils'
 import { money, qty } from '../utils/FormatUtils'
 import { detailAoa, detailCsv, buildXls, SheetData, countText } from '../utils/ExporterUtils'
 import { Theme } from '../common/Theme'
@@ -72,7 +72,8 @@ export struct DetailPage {
   private rangeStartEnd(): string[] {
     const today: string = todayStr()
     if (this.rangeType === 'week') {
-      return weekRangeOf(today)
+      const r: DateRange = weekRangeOf(today)
+      return [r.start, r.end]
     }
     if (this.rangeType === 'month') {
       const ym: string = today.substring(0, 7)

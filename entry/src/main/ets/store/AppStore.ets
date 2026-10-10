@@ -3,8 +3,8 @@
  * 全量 CRUD + 单文档持久化（RelationalStore 事务全量重写）+ 自动备份钩子 + 演示数据 + 主题状态。
  * 变更方法返回新引用快照，页面通过 @State doc 接收以触发 UI 刷新。
  */
-import { common } from '@kit.AbilityKit'
-import { ConfigurationConstant, window } from '@kit.ArkUI'
+import { common, ConfigurationConstant } from '@kit.AbilityKit'
+import { window } from '@kit.ArkUI'
 import { DataStore } from '../db/Database'
 import { PrefStore } from '../db/PrefStore'
 import { BackupUtils } from '../utils/BackupUtils'
@@ -69,7 +69,7 @@ export class AppStore {
    * dark -> 强制深色；light -> 强制浅色；auto -> 跟随系统（COLOR_MODE_NOT_SET）。
    */
   applyThemeToWindow(): void {
-    if (this.win === null) {
+    if (this.ctx === null) {
       return
     }
     try {
@@ -80,7 +80,7 @@ export class AppStore {
       } else if (s.theme === 'light') {
         mode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT
       }
-      this.win.getUIContext().setColorMode(mode)
+      this.ctx.getApplicationContext().setColorMode(mode)
     } catch (e) {
       // 窗口模式设置失败不影响功能
     }

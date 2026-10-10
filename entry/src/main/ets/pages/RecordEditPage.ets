@@ -259,7 +259,7 @@ struct RecordEditPage {
   }
 
   @Builder
-  fieldCard(label: string, content: () => void) {
+  fieldCard(label: string, content: CustomBuilder) {
     Column() {
       Text(label)
         .fontSize(13)

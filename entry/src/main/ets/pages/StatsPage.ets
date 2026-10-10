@@ -2,9 +2,9 @@
  * 统计 Tab：多区间汇总指标、金额趋势（长区间按月聚合）、近7天趋势、产品占比、
  * 班次对比、近6月对比、工序/工人排行、最高单日、统计长图导出、五表 Excel 导出
  */
-import { componentSnapshot, promptAction, ProgressType } from '@kit.ArkUI'
+import { componentSnapshot, promptAction } from '@kit.ArkUI'
 import { image } from '@kit.ImageKit'
-import { photoAccessHelper } from '@ohos.file.photoAccessHelper'
+import photoAccessHelper from '@ohos.file.photoAccessHelper'
 import { abilityAccessCtrl, bundleManager, common, Permissions } from '@kit.AbilityKit'
 import { picker as documentViewPicker, fileIo as fs } from '@kit.CoreFileKit'
 import { BusinessError } from '@kit.BasicServicesKit'
@@ -42,6 +42,7 @@ export struct StatsPage {
   onDocChanged: (d: DataDoc) => void = (d: DataDoc) => {
   }
   private store: AppStore = AppStore.getInstance()
+  private shareColors: string[] = ['#1989fa', '#36d399', '#f67a2e', '#ffc928', '#7d5bf5', '#fa4d4d', '#00b8c5', '#b3a4ff']
 
   @State rangeType: string = 'week'
   @State customStart: string = todayStr()
@@ -317,8 +318,7 @@ export struct StatsPage {
       .width('100%')
     Column({ space: 0 }) {
       ForEach(this.productShares(), (s: ShareItem, idx: number) => {
-        const colors: string[] = ['#1989fa', '#36d399', '#f67a2e', '#ffc928', '#7d5bf5', '#fa4d4d', '#00b8c5', '#b3a4ff']
-        this.legendRow(s.name, s.ratio, s.amount, colors[idx] ?? '#1989fa')
+        this.legendRow(s.name, s.ratio, s.amount, this.shareColors[idx] ?? '#1989fa')
       }, (s: ShareItem, idx: number) => `${s.name}-${idx}`)
     }
     .width('100%')
@@ -334,7 +334,7 @@ export struct StatsPage {
             .fontColor(Theme.text())
             .width(48)
           Column({ space: 4 }) {
-            Progress({ value: s.amount, total: Math.max(this.shiftList()[0].amount + this.shiftList()[1].amount, 1), type: ProgressType.Linear })
+            Progress({ value: s.amount, total: Math.max(this.shiftList()[0].amount + this.shiftList()[1].amount, 1) })
               .width('100%')
               .height(8)
               .color(s.name === '夜班' ? Theme.orange() : Theme.blue())
@@ -605,25 +605,25 @@ export struct StatsPage {
           }
 
           // 近 7 天趋势
-          this.chartCard('近7天趋势', this.last7Chart())
+          this.chartCard('近7天趋势', this.last7Chart)
 
           // 金额趋势（长区间按月聚合）
-          this.chartCard(this.longRange() ? '金额趋势（按月）' : '金额趋势', this.trendChart())
+          this.chartCard(this.longRange() ? '金额趋势（按月）' : '金额趋势', this.trendChart)
 
           // 产品占比
-          this.chartCard('产品金额占比', this.productShareChart())
+          this.chartCard('产品金额占比', this.productShareChart)
 
           // 班次对比
-          this.chartCard('班次对比', this.shiftCompareChart())
+          this.chartCard('班次对比', this.shiftCompareChart)
 
           // 近 6 月对比
-          this.chartCard('近6月对比', this.recent6Chart())
+          this.chartCard('近6月对比', this.recent6Chart)
 
           // 工序排行
-          this.chartCard('工序排行（金额）', this.processRankChart())
+          this.chartCard('工序排行（金额）', this.processRankChart)
 
           // 工人排行
-          this.chartCard('工人排行（金额）', this.workerRankChart())
+          this.chartCard('工人排行（金额）', this.workerRankChart)
 
           Blank().height(20)
         }
