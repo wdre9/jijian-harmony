@@ -29,6 +29,7 @@ struct RecordEditPage {
   @State noteText: string = ''
   @State showProductSheet: boolean = false
   @State showProcessSheet: boolean = false
+  @State saving: boolean = false
   private store: AppStore = AppStore.getInstance()
 
   aboutToAppear(): void {
@@ -110,6 +111,9 @@ struct RecordEditPage {
   }
 
   private async save(): Promise<void> {
+    if (this.saving) {
+      return
+    }
     if (!this.productId) {
       this.toast('请选择产品')
       return
@@ -128,31 +132,38 @@ struct RecordEditPage {
       this.toast('单价不合法')
       return
     }
-    const now: number = Date.now()
-    if (this.editId) {
-      const old: PieceRecord | undefined = this.store.doc.records.find((x: PieceRecord) => x.id === this.editId)
-      const r: PieceRecord = {
-        id: this.editId,
-        date: this.dateText,
-        productId: this.productId,
-        processId: this.processId,
-        quantity: q,
-        price: p,
-        amount: round(q * p, 2),
-        worker: this.workerText.trim(),
-        shift: this.shift,
-        note: this.noteText.trim(),
-        createdAt: old ? old.createdAt : now,
-        updatedAt: now
+    this.saving = true
+    try {
+      const now: number = Date.now()
+      if (this.editId) {
+        const old: PieceRecord | undefined = this.store.doc.records.find((x: PieceRecord) => x.id === this.editId)
+        const r: PieceRecord = {
+          id: this.editId,
+          date: this.dateText,
+          productId: this.productId,
+          processId: this.processId,
+          quantity: q,
+          price: p,
+          amount: round(q * p, 2),
+          worker: this.workerText.trim(),
+          shift: this.shift,
+          note: this.noteText.trim(),
+          createdAt: old ? old.createdAt : now,
+          updatedAt: now
+        }
+        this.doc = await this.store.updateRecord(r)
+      } else {
+        this.doc = await this.store.addRecord(
+          this.dateText, this.productId, this.processId, q, p,
+          this.workerText.trim(), this.shift, this.noteText.trim())
       }
-      this.doc = await this.store.updateRecord(r)
-    } else {
-      this.doc = await this.store.addRecord(
-        this.dateText, this.productId, this.processId, q, p,
-        this.workerText.trim(), this.shift, this.noteText.trim())
+      this.toast(this.editId ? '已保存' : '记账成功')
+      router.back()
+    } catch (e) {
+      this.toast('保存失败，请重试')
+    } finally {
+      this.saving = false
     }
-    this.toast('已保存')
-    router.back()
   }
 
   @Builder
@@ -169,11 +180,13 @@ struct RecordEditPage {
         .fontSize(16)
         .fontWeight(FontWeight.Medium)
       Blank()
-      Text('保存')
+      Text(this.saving ? '保存中…' : '保存')
         .fontSize(15)
-        .fontColor(Theme.blue())
+        .fontColor(this.saving ? Theme.sub() : Theme.blue())
         .onClick(() => {
-          this.save()
+          if (!this.saving) {
+            this.save()
+          }
         })
     }
     .width('100%')

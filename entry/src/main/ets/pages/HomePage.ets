@@ -27,6 +27,7 @@ export struct HomePage {
   @State quickPrice: string = '0'
   @State quickWorker: string = ''
   @State quickShift: string = 'day'
+  @State quickSaving: boolean = false
 
   /** 富化全部记录 */
   private enriched(): EnrichedRecord[] {
@@ -129,6 +130,9 @@ export struct HomePage {
 
   /** 快捷保存：写入记录并刷新父级 doc */
   private async quickSave(): Promise<void> {
+    if (this.quickSaving) {
+      return
+    }
     if (!this.quickProductId) {
       this.toast('请选择产品')
       return
@@ -147,12 +151,19 @@ export struct HomePage {
       this.toast('单价不合法')
       return
     }
-    const d: DataDoc = await this.store.addRecord(
-      todayStr(), this.quickProductId, this.quickProcessId, q, p,
-      this.quickWorker.trim(), this.quickShift, '')
-    this.onDocChanged(d)
-    this.showQuickSheet = false
-    this.toast('已保存')
+    this.quickSaving = true
+    try {
+      const d: DataDoc = await this.store.addRecord(
+        todayStr(), this.quickProductId, this.quickProcessId, q, p,
+        this.quickWorker.trim(), this.quickShift, '')
+      this.onDocChanged(d)
+      this.showQuickSheet = false
+      this.toast('记账成功')
+    } catch (e) {
+      this.toast('保存失败，请重试')
+    } finally {
+      this.quickSaving = false
+    }
   }
 
   @Builder
@@ -339,14 +350,17 @@ export struct HomePage {
             this.quickShift = 'night'
           })
         Blank()
-        Button('保存')
+        Button(this.quickSaving ? '保存中…' : '保存')
           .type(ButtonType.Capsule)
-          .backgroundColor(Theme.blue())
+          .backgroundColor(this.quickSaving ? Theme.line() : Theme.blue())
           .fontColor(Theme.white())
           .fontSize(14)
           .height(34)
+          .enabled(!this.quickSaving)
           .onClick(() => {
-            this.quickSave()
+            if (!this.quickSaving) {
+              this.quickSave()
+            }
           })
       }
       .width('100%')

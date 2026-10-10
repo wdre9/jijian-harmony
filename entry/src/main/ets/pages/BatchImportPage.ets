@@ -29,6 +29,7 @@ export struct BatchImportPage {
   @State result: ImportParseResult | null = null
   @State importing: boolean = false
   @State ocrBusy: boolean = false
+  @State importedCount: number = 0
   private store: AppStore = AppStore.getInstance()
 
   private toast(msg: string): void {
@@ -113,10 +114,14 @@ export struct BatchImportPage {
   }
 
   private async doImport(): Promise<void> {
+    if (this.importing) {
+      return
+    }
     if (!this.result || this.result.rows.length === 0) {
       this.toast('请先解析文本')
       return
     }
+    this.importing = true
     const res = await promptAction.showDialog({
       title: '确认导入',
       message: `将导入 ${this.result.rows.length} 条记录，未解析 ${this.result.unparsed.length} 行（自动跳过）。确定？`,
@@ -126,24 +131,30 @@ export struct BatchImportPage {
       ]
     })
     if (res.index !== 1) {
+      this.importing = false
       return
     }
-    this.importing = true
     let okCount: number = 0
-    for (let i = 0; i < this.result.rows.length; i++) {
-      const row: ImportRow = this.result.rows[i]
-      const r: ResolvedRow | null = this.resolveRow(row)
-      if (!r) {
-        continue
+    try {
+      for (let i = 0; i < this.result.rows.length; i++) {
+        const row: ImportRow = this.result.rows[i]
+        const r: ResolvedRow | null = this.resolveRow(row)
+        if (!r) {
+          continue
+        }
+        this.doc = await this.store.addRecord(
+          row.date, r.product.id, r.process.id, row.quantity, row.price,
+          row.worker || this.worker, row.shift, row.note)
+        okCount++
       }
-      this.doc = await this.store.addRecord(
-        row.date, r.product.id, r.process.id, row.quantity, row.price,
-        row.worker || this.worker, row.shift, row.note)
-      okCount++
+      this.importedCount = okCount
+      this.toast(`导入完成：${okCount} 条`)
+    } catch (e) {
+      this.toast('导入失败，请重试')
+    } finally {
+      this.importing = false
+      this.result = null
     }
-    this.importing = false
-    this.toast(`导入完成：${okCount} 条`)
-    this.result = null
   }
 
   @Builder
@@ -290,6 +301,31 @@ export struct BatchImportPage {
 
       Scroll() {
         Column({ space: 10 }) {
+          // 导入成功结果卡：明确反馈，避免空白页误导重复提交
+          if (this.importedCount > 0) {
+            Row({ space: 8 }) {
+              Text('✓')
+                .fontSize(18)
+                .fontColor(GREEN)
+              Column({ space: 2 }) {
+                Text(`已导入 ${this.importedCount} 条记录`)
+                  .fontSize(15)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(Theme.text())
+                Text('可在「明细」页查看，如需再次导入请重新粘贴文本或 OCR')
+                  .fontSize(11)
+                  .fontColor(Theme.sub())
+              }
+              .alignItems(HorizontalAlign.Start)
+              .layoutWeight(1)
+            }
+            .width('100%')
+            .padding(12)
+            .backgroundColor('#e8f9f0')
+            .borderRadius(10)
+            .alignItems(VerticalAlign.Center)
+          }
+
           // 输入
           Column({ space: 6 }) {
             Row({ space: 8 }) {
