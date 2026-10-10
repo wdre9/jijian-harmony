@@ -1,3 +1,14 @@
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: d5d87225b25c7ff9ce7972807796c3bd_9c19e40bc48d11f197b3525400248c00
+    ReservedCode1: lOWkj/ZtgfjF+vwCnMWa1p0wmJ2MozTfgQJpMSf1SP7fk0FW9rMIzqrNQ+jA81KLCbT1wOGsE7nVFZwyqFWxz01GZAm8Qd086DbsG7IGaThcpS3vOAR++Bmo8CINIXmqNnwHpS6eaZaK/KlV+/uNy/Ju2Zs6TDhDyNNVIqDPWm/9d1Jfo7dIimiReoU=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: d5d87225b25c7ff9ce7972807796c3bd_9c19e40bc48d11f197b3525400248c00
+    ReservedCode2: lOWkj/ZtgfjF+vwCnMWa1p0wmJ2MozTfgQJpMSf1SP7fk0FW9rMIzqrNQ+jA81KLCbT1wOGsE7nVFZwyqFWxz01GZAm8Qd086DbsG7IGaThcpS3vOAR++Bmo8CINIXmqNnwHpS6eaZaK/KlV+/uNy/Ju2Zs6TDhDyNNVIqDPWm/9d1Jfo7dIimiReoU=
+---
+
 # 计件 · Jijian (HarmonyOS NEXT)
 
 计件工资记账助手 —— HarmonyOS NEXT 原生应用（ArkTS / ArkUI），本地优先、离线可用、数据不出本机。
@@ -11,9 +22,9 @@ Jijian (Piece-Rate Wage Bookkeeping) — a native HarmonyOS NEXT app built with 
 
 ## 项目介绍 · Introduction
 
-「计件」面向计件制工厂/车间记账场景：工人按产品工序计件，班组长或老板快速录入当天产量，按日/周/月查看金额与件数，支持 OCR 拍照识别批量录入、CSV/Excel/JSON 导出、自动备份。
+「计件」面向计件制工厂/车间记账场景：工人按产品工序计件，班组长或老板快速录入当天产量，按日/周/月查看金额与件数，支持 OCR 拍照识别批量录入（识别文本须同时包含货号、单价、数量）、CSV/Excel/JSON 导出、本地自动备份。
 
-Jijian targets piece-rate workshops: record daily output per product & process, view amount/quantity by day/week/month, OCR batch entry from photos, export to CSV/Excel/JSON, and automatic backups.
+Jijian targets piece-rate workshops: record daily output per product & process, view amount/quantity by day/week/month, OCR batch entry from photos (recognized text must contain item code, unit price and quantity), export to CSV/Excel/JSON, and local automatic backups.
 
 ## 功能特性 · Features
 
@@ -23,8 +34,8 @@ Jijian targets piece-rate workshops: record daily output per product & process, 
 | 首页概览：今日/本周/本月金额、件数、目标进度、最近记录 | Home overview: today/week/month amount & quantity, goal progress, recent records |
 | 明细查询：日期区间/产品/工人/班次筛选，按日分组，多选批量导出 | Details: filter by date/product/worker/shift, grouped by day, multi-select batch export |
 | 多维统计：多区间汇总、趋势折线图、产品占比饼图、工序/工人排行柱状图（Canvas 自绘） | Statistics: ranges, trend line chart, product pie chart, process/worker bar charts (custom Canvas) |
-| OCR 本地识别：相册选图，设备端 CoreVisionKit 识别，数据不出本机 | On-device OCR: pick photo from album, CoreVisionKit recognition locally |
-| 自动备份：保存后 24h 节流，滚动保留最近 14 份 JSON | Auto backup: 24h throttle after save, keeps latest 14 JSON backups |
+| OCR 本地识别：相册选图，设备端 CoreVisionKit 识别，数据不出本机；识别文本须同时包含货号、单价、数量方可批量录入 | On-device OCR: pick photo from album, CoreVisionKit recognition locally; batch entry requires recognized text to contain item code, unit price and quantity |
+| 本地自动备份：保存后 24h 节流，滚动保留最近 14 份 JSON（仅存本机沙箱，无服务器、不上传） | Local auto backup: 24h throttle after save, keeps latest 14 JSON backups (stored in the local sandbox only, no server, no upload) |
 | 导出：CSV(带 BOM) / Excel(.xls) / JSON / 文本 / 统计长图 | Export: CSV(BOM) / Excel(.xls) / JSON / text / stats snapshot image |
 | 主题：浅色 / 深色 / 跟随系统 | Themes: light / dark / follow system |
 | 中英双文文档与自动化 CI 构建 | Bilingual docs & automated CI builds |
@@ -90,4 +101,17 @@ All data is stored only in the local app sandbox (RelationalStore + sandbox file
 
 ## 开源协议 · License
 
-MIT
+本项目基于 [MIT 许可证](LICENSE) 开源，版权归 wdre9 所有（2026）。MIT 许可允许自由使用、修改、分发（含商用），但需保留版权声明。
+
+This project is open-sourced under the [MIT License](LICENSE), Copyright (c) 2026 wdre9. You are free to use, modify and distribute (including commercially) provided the copyright notice is retained.
+
+## 参与贡献 · Contributing
+
+欢迎参与本项目。提交 Issue 或 Pull Request 之前，建议先阅读：
+
+- [贡献指南](CONTRIBUTING.md)：开发环境、分支与提交约定、Pull Request 流程
+- [行为准则](CODE_OF_CONDUCT.md)：社区交流的基本约定
+- [安全政策](SECURITY.md)：漏洞上报方式与处理时限
+
+问题反馈请使用 Issue 模板：https://github.com/wdre9/jijian-harmony/issues/new/choose
+代码变更请按 Pull Request 模板填写变更说明与验证方式。Release history is kept in [CHANGELOG.md](CHANGELOG.md).
