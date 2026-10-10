@@ -285,22 +285,6 @@ export struct StatsPage {
   }
 
   @Builder
-  chartCard(title: string, chart: () => void) {
-    Column({ space: 8 }) {
-      Text(title)
-        .fontSize(14)
-        .fontWeight(FontWeight.Medium)
-        .fontColor(Theme.text())
-      chart()
-    }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .padding(12)
-    .backgroundColor(Theme.card())
-    .borderRadius(10)
-  }
-
-  @Builder
   last7Chart() {
     LineChart({ points: this.last7(), dark: Theme.isDark() })
       .width('100%')
@@ -605,25 +589,102 @@ export struct StatsPage {
           }
 
           // 近 7 天趋势
-          this.chartCard('近7天趋势', () => { this.last7Chart() })
+          Column({ space: 8 }) {
+            Text('近7天趋势')
+              .fontSize(14)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(Theme.text())
+            this.last7Chart()
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .padding(12)
+          .backgroundColor(Theme.card())
+          .borderRadius(10)
 
           // 金额趋势（长区间按月聚合）
-          this.chartCard(this.longRange() ? '金额趋势（按月）' : '金额趋势', () => { this.trendChart() })
+          Column({ space: 8 }) {
+            Text(this.longRange() ? '金额趋势（按月）' : '金额趋势')
+              .fontSize(14)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(Theme.text())
+            this.trendChart()
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .padding(12)
+          .backgroundColor(Theme.card())
+          .borderRadius(10)
 
           // 产品占比
-          this.chartCard('产品金额占比', () => { this.productShareChart() })
+          Column({ space: 8 }) {
+            Text('产品金额占比')
+              .fontSize(14)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(Theme.text())
+            this.productShareChart()
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .padding(12)
+          .backgroundColor(Theme.card())
+          .borderRadius(10)
 
           // 班次对比
-          this.chartCard('班次对比', () => { this.shiftCompareChart() })
+          Column({ space: 8 }) {
+            Text('班次对比')
+              .fontSize(14)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(Theme.text())
+            this.shiftCompareChart()
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .padding(12)
+          .backgroundColor(Theme.card())
+          .borderRadius(10)
 
           // 近 6 月对比
-          this.chartCard('近6月对比', () => { this.recent6Chart() })
+          Column({ space: 8 }) {
+            Text('近6月对比')
+              .fontSize(14)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(Theme.text())
+            this.recent6Chart()
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .padding(12)
+          .backgroundColor(Theme.card())
+          .borderRadius(10)
 
           // 工序排行
-          this.chartCard('工序排行（金额）', () => { this.processRankChart() })
+          Column({ space: 8 }) {
+            Text('工序排行（金额）')
+              .fontSize(14)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(Theme.text())
+            this.processRankChart()
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .padding(12)
+          .backgroundColor(Theme.card())
+          .borderRadius(10)
 
           // 工人排行
-          this.chartCard('工人排行（金额）', () => { this.workerRankChart() })
+          Column({ space: 8 }) {
+            Text('工人排行（金额）')
+              .fontSize(14)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(Theme.text())
+            this.workerRankChart()
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .padding(12)
+          .backgroundColor(Theme.card())
+          .borderRadius(10)
 
           Blank().height(20)
         }
