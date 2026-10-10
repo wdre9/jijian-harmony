@@ -7,6 +7,26 @@ import { EnrichedRecord } from './StatsUtils'
 import { escapeCsvCell, priceText, qty, round } from './FormatUtils'
 import { ymOf } from './DateUtils'
 
+/** 聚合统计：件数 + 金额 */
+interface QtyAmount {
+  qty: number
+  amount: number
+}
+
+/** 聚合统计：件数 + 金额 + 规格 */
+interface QtyAmountSpec {
+  qty: number
+  amount: number
+  spec: string
+}
+
+/** 聚合统计：件数 + 金额 + 笔数 */
+interface QtyAmountCount {
+  qty: number
+  amount: number
+  count: number
+}
+
 /** 工作表数据 */
 export interface SheetData {
   name: string
@@ -134,11 +154,11 @@ export function buildXls(sheets: SheetData[]): string {
 
 /** 产品汇总表：产品 / 规格 / 件数 / 金额（按金额降序） */
 export function productSummaryAoa(rows: EnrichedRecord[]): Array<Array<string | number>> {
-  const map: Map<string, { qty: number, amount: number, spec: string }> = new Map<string, { qty: number, amount: number, spec: string }>()
+  const map: Map<string, QtyAmountSpec> = new Map<string, QtyAmountSpec>()
   for (let i = 0; i < rows.length; i++) {
     const r: EnrichedRecord = rows[i]
     const key: string = r.productName
-    const cur: { qty: number, amount: number, spec: string } | undefined = map.get(key)
+    const cur: QtyAmountSpec | undefined = map.get(key)
     if (cur === undefined) {
       map.set(key, { qty: r.quantity, amount: r.amount, spec: r.spec })
     } else {
@@ -171,7 +191,7 @@ export function productSummaryAoa(rows: EnrichedRecord[]): Array<Array<string | 
 
 /** 工序汇总表：工序 / 件数 / 金额 */
 export function processSummaryAoa(rows: EnrichedRecord[]): Array<Array<string | number>> {
-  const map: Map<string, { qty: number, amount: number }> = new Map<string, { qty: number, amount: number }>()
+  const map: Map<string, QtyAmount> = new Map<string, QtyAmount>()
   for (let i = 0; i < rows.length; i++) {
     const r: EnrichedRecord = rows[i]
     const key: string = r.processName
@@ -205,7 +225,7 @@ export function processSummaryAoa(rows: EnrichedRecord[]): Array<Array<string | 
 
 /** 工人汇总表：工人 / 件数 / 金额 */
 export function workerSummaryAoa(rows: EnrichedRecord[]): Array<Array<string | number>> {
-  const map: Map<string, { qty: number, amount: number }> = new Map<string, { qty: number, amount: number }>()
+  const map: Map<string, QtyAmount> = new Map<string, QtyAmount>()
   for (let i = 0; i < rows.length; i++) {
     const r: EnrichedRecord = rows[i]
     const key: string = r.worker || '未填'
@@ -239,7 +259,7 @@ export function workerSummaryAoa(rows: EnrichedRecord[]): Array<Array<string | n
 
 /** 日期汇总表：日期 / 笔数 / 件数 / 金额（升序） */
 export function daySummaryAoa(rows: EnrichedRecord[]): Array<Array<string | number>> {
-  const map: Map<string, { qty: number, amount: number, count: number }> = new Map<string, { qty: number, amount: number, count: number }>()
+  const map: Map<string, QtyAmountCount> = new Map<string, QtyAmountCount>()
   for (let i = 0; i < rows.length; i++) {
     const r: EnrichedRecord = rows[i]
     const key: string = r.date
@@ -303,7 +323,7 @@ export function shiftSummaryAoa(rows: EnrichedRecord[]): Array<Array<string | nu
 
 /** 按月汇总表：月份 / 笔数 / 件数 / 金额（升序） */
 export function monthSummaryAoa(rows: EnrichedRecord[], start: string, end: string): Array<Array<string | number>> {
-  const map: Map<string, { qty: number, amount: number, count: number }> = new Map<string, { qty: number, amount: number, count: number }>()
+  const map: Map<string, QtyAmountCount> = new Map<string, QtyAmountCount>()
   for (let i = 0; i < rows.length; i++) {
     const r: EnrichedRecord = rows[i]
     if (r.date < start || r.date > end) {

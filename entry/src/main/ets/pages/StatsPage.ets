@@ -300,6 +300,115 @@ export struct StatsPage {
   }
 
   @Builder
+  last7Chart() {
+    LineChart({ points: this.last7(), dark: Theme.isDark() })
+      .width('100%')
+  }
+
+  @Builder
+  trendChart() {
+    LineChart({ points: this.trend(), dark: Theme.isDark() })
+      .width('100%')
+  }
+
+  @Builder
+  productShareChart() {
+    PieChart({ items: this.productShares(), dark: Theme.isDark() })
+      .width('100%')
+    Column({ space: 0 }) {
+      ForEach(this.productShares(), (s: ShareItem, idx: number) => {
+        const colors: string[] = ['#1989fa', '#36d399', '#f67a2e', '#ffc928', '#7d5bf5', '#fa4d4d', '#00b8c5', '#b3a4ff']
+        this.legendRow(s.name, s.ratio, s.amount, colors[idx] ?? '#1989fa')
+      }, (s: ShareItem, idx: number) => `${s.name}-${idx}`)
+    }
+    .width('100%')
+  }
+
+  @Builder
+  shiftCompareChart() {
+    Column({ space: 8 }) {
+      ForEach(this.shiftList(), (s: ShiftStat) => {
+        Row({ space: 8 }) {
+          Text(s.name)
+            .fontSize(13)
+            .fontColor(Theme.text())
+            .width(48)
+          Column({ space: 4 }) {
+            Progress({ value: s.amount, total: Math.max(this.shiftList()[0].amount + this.shiftList()[1].amount, 1), type: ProgressType.Linear })
+              .width('100%')
+              .height(8)
+              .color(s.name === '夜班' ? Theme.orange() : Theme.blue())
+              .backgroundColor(Theme.line())
+            Row({ space: 6 }) {
+              Text(money(s.amount))
+                .fontSize(12)
+                .fontColor(s.name === '夜班' ? Theme.orange() : Theme.blue())
+              Text(`${qty(s.quantity)} 件 · ${s.count} 笔`)
+                .fontSize(11)
+                .fontColor(Theme.sub())
+            }
+            .width('100%')
+          }
+          .layoutWeight(1)
+        }
+        .width('100%')
+      }, (s: ShiftStat) => s.name)
+    }
+    .width('100%')
+  }
+
+  @Builder
+  recent6Chart() {
+    BarChart({ items: this.recent6(), dark: Theme.isDark() })
+      .width('100%')
+    Column({ space: 0 }) {
+      ForEach(this.recent6(), (r: RankItem, idx: number) => {
+        Row({ space: 6 }) {
+          Text(r.name)
+            .fontSize(12)
+            .fontColor(Theme.text())
+            .width(48)
+          Text(money(r.amount))
+            .fontSize(12)
+            .fontColor(Theme.blue())
+            .layoutWeight(1)
+          Text(qty(r.quantity) + ' 件')
+            .fontSize(11)
+            .fontColor(Theme.sub())
+            .visibility(Visibility.Hidden)
+        }
+        .width('100%')
+        .margin({ top: 2, bottom: 2 })
+      }, (r: RankItem, idx: number) => `${r.name}-${idx}`)
+    }
+    .width('100%')
+  }
+
+  @Builder
+  processRankChart() {
+    BarChart({ items: this.processRank(), dark: Theme.isDark() })
+      .width('100%')
+    Column({ space: 0 }) {
+      ForEach(this.processRank(), (r: RankItem, idx: number) => {
+        this.rankRow(r, idx)
+      }, (r: RankItem, idx: number) => `${r.name}-${idx}`)
+    }
+    .width('100%')
+  }
+
+  @Builder
+  workerRankChart() {
+    BarChart({ items: this.workerRank(), dark: Theme.isDark() })
+      .width('100%')
+    Column({ space: 0 }) {
+      ForEach(this.workerRank(), (r: RankItem, idx: number) => {
+        this.rankRow(r, idx)
+      }, (r: RankItem, idx: number) => `${r.name}-${idx}`)
+    }
+    .width('100%')
+  }
+
+  @Builder
   legendRow(name: string, ratio: number, amount: number, color: string) {
     Row({ space: 6 }) {
       Circle({ width: 10, height: 10 })
@@ -496,113 +605,25 @@ export struct StatsPage {
           }
 
           // 近 7 天趋势
-          this.chartCard('近7天趋势', () => {
-            LineChart({ points: this.last7(), dark: Theme.isDark() })
-              .width('100%')
-          })
+          this.chartCard('近7天趋势', this.last7Chart())
 
           // 金额趋势（长区间按月聚合）
-          this.chartCard(this.longRange() ? '金额趋势（按月）' : '金额趋势', () => {
-            LineChart({ points: this.trend(), dark: Theme.isDark() })
-              .width('100%')
-          })
+          this.chartCard(this.longRange() ? '金额趋势（按月）' : '金额趋势', this.trendChart())
 
           // 产品占比
-          this.chartCard('产品金额占比', () => {
-            PieChart({ items: this.productShares(), dark: Theme.isDark() })
-              .width('100%')
-            Column({ space: 0 }) {
-              ForEach(this.productShares(), (s: ShareItem, idx: number) => {
-                const colors: string[] = ['#1989fa', '#36d399', '#f67a2e', '#ffc928', '#7d5bf5', '#fa4d4d', '#00b8c5', '#b3a4ff']
-                this.legendRow(s.name, s.ratio, s.amount, colors[idx] ?? '#1989fa')
-              }, (s: ShareItem, idx: number) => `${s.name}-${idx}`)
-            }
-            .width('100%')
-          })
+          this.chartCard('产品金额占比', this.productShareChart())
 
           // 班次对比
-          this.chartCard('班次对比', () => {
-            Column({ space: 8 }) {
-              ForEach(this.shiftList(), (s: ShiftStat) => {
-                Row({ space: 8 }) {
-                  Text(s.name)
-                    .fontSize(13)
-                    .fontColor(Theme.text())
-                    .width(48)
-                  Column({ space: 4 }) {
-                    Progress({ value: s.amount, total: Math.max(this.shiftList()[0].amount + this.shiftList()[1].amount, 1), type: ProgressType.Linear })
-                      .width('100%')
-                      .height(8)
-                      .color(s.name === '夜班' ? Theme.orange() : Theme.blue())
-                      .backgroundColor(Theme.line())
-                    Row({ space: 6 }) {
-                      Text(money(s.amount))
-                        .fontSize(12)
-                        .fontColor(s.name === '夜班' ? Theme.orange() : Theme.blue())
-                      Text(`${qty(s.quantity)} 件 · ${s.count} 笔`)
-                        .fontSize(11)
-                        .fontColor(Theme.sub())
-                    }
-                    .width('100%')
-                  }
-                  .layoutWeight(1)
-                }
-                .width('100%')
-              }, (s: ShiftStat) => s.name)
-            }
-            .width('100%')
-          })
+          this.chartCard('班次对比', this.shiftCompareChart())
 
           // 近 6 月对比
-          this.chartCard('近6月对比', () => {
-            BarChart({ items: this.recent6(), dark: Theme.isDark() })
-              .width('100%')
-            Column({ space: 0 }) {
-              ForEach(this.recent6(), (r: RankItem, idx: number) => {
-                Row({ space: 6 }) {
-                  Text(r.name)
-                    .fontSize(12)
-                    .fontColor(Theme.text())
-                    .width(48)
-                  Text(money(r.amount))
-                    .fontSize(12)
-                    .fontColor(Theme.blue())
-                    .layoutWeight(1)
-                  Text(qty(r.quantity) + ' 件')
-                    .fontSize(11)
-                    .fontColor(Theme.sub())
-                    .visibility(Visibility.Hidden)
-                }
-                .width('100%')
-                .margin({ top: 2, bottom: 2 })
-              }, (r: RankItem, idx: number) => `${r.name}-${idx}`)
-            }
-            .width('100%')
-          })
+          this.chartCard('近6月对比', this.recent6Chart())
 
           // 工序排行
-          this.chartCard('工序排行（金额）', () => {
-            BarChart({ items: this.processRank(), dark: Theme.isDark() })
-              .width('100%')
-            Column({ space: 0 }) {
-              ForEach(this.processRank(), (r: RankItem, idx: number) => {
-                this.rankRow(r, idx)
-              }, (r: RankItem, idx: number) => `${r.name}-${idx}`)
-            }
-            .width('100%')
-          })
+          this.chartCard('工序排行（金额）', this.processRankChart())
 
           // 工人排行
-          this.chartCard('工人排行（金额）', () => {
-            BarChart({ items: this.workerRank(), dark: Theme.isDark() })
-              .width('100%')
-            Column({ space: 0 }) {
-              ForEach(this.workerRank(), (r: RankItem, idx: number) => {
-                this.rankRow(r, idx)
-              }, (r: RankItem, idx: number) => `${r.name}-${idx}`)
-            }
-            .width('100%')
-          })
+          this.chartCard('工人排行（金额）', this.workerRankChart())
 
           Blank().height(20)
         }

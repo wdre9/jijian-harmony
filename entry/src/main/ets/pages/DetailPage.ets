@@ -11,6 +11,19 @@ import { money, qty } from '../utils/FormatUtils'
 import { detailAoa, detailCsv, buildXls, SheetData, countText } from '../utils/ExporterUtils'
 import { Theme } from '../common/Theme'
 
+/** 导出选项 */
+interface ExportOption {
+  key: string
+  label: string
+}
+
+/** JSON 导出包 */
+interface JsonExportPayload {
+  exportedAt: number
+  count: number
+  records: EnrichedRecord[]
+}
+
 
 @Component
 export struct DetailPage {
@@ -151,7 +164,7 @@ export struct DetailPage {
       content = '\ufeff' + detailCsv(rows)
     } else if (kind === 'json') {
       fileName = `计件明细-${todayStr()}.json`
-      const payload: object = {
+      const payload: JsonExportPayload = {
         exportedAt: Date.now(),
         count: rows.length,
         records: rows
@@ -217,6 +230,16 @@ export struct DetailPage {
       })
   }
 
+  /** 导出选项列表 */
+  private exportOptions(): ExportOption[] {
+    return [
+      { key: 'csv', label: 'CSV 文件（Excel 可直接打开）' },
+      { key: 'xls', label: 'Excel 文件（.xls，含汇总表）' },
+      { key: 'json', label: 'JSON 文件' },
+      { key: 'text', label: '文本文件' }
+    ]
+  }
+
   @Builder
   exportSheet() {
     Column({ space: 6 }) {
@@ -224,12 +247,7 @@ export struct DetailPage {
         .fontSize(16)
         .fontWeight(FontWeight.Medium)
         .padding({ top: 16, bottom: 10 })
-      ForEach([
-        { key: 'csv', label: 'CSV 文件（Excel 可直接打开）' },
-        { key: 'xls', label: 'Excel 文件（.xls，含汇总表）' },
-        { key: 'json', label: 'JSON 文件' },
-        { key: 'text', label: '文本文件' }
-      ], (item: { key: string, label: string }) => {
+      ForEach(this.exportOptions(), (item: ExportOption) => {
         Text(item.label)
           .fontSize(14)
           .width('100%')
@@ -239,7 +257,7 @@ export struct DetailPage {
           .onClick(() => {
             this.doExport(item.key)
           })
-      }, (item: { key: string, label: string }) => item.key)
+      }, (item: ExportOption) => item.key)
       Blank().height(20)
     }
     .width('100%')

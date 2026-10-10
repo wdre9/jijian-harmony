@@ -13,6 +13,12 @@ import { Theme } from '../common/Theme'
 
 const GREEN: string = '#36d399'
 
+/** 解析行匹配到的产品与工序 */
+interface ResolvedRow {
+  product: Product
+  process: Process
+}
+
 @Entry
 @Component
 export struct BatchImportPage {
@@ -64,7 +70,7 @@ export struct BatchImportPage {
   }
 
   /** 匹配或创建产品/工序，返回行 id */
-  private resolveRow(row: ImportRow): { product: Product, process: Process } | null {
+  private resolveRow(row: ImportRow): ResolvedRow | null {
     // 产品：按名称（四位货号）匹配，无则创建
     let product: Product | undefined = this.doc.products.find((p: Product) => p.name === row.productName)
     if (!product) {
@@ -126,7 +132,7 @@ export struct BatchImportPage {
     let okCount: number = 0
     for (let i = 0; i < this.result.rows.length; i++) {
       const row: ImportRow = this.result.rows[i]
-      const r: { product: Product, process: Process } | null = this.resolveRow(row)
+      const r: ResolvedRow | null = this.resolveRow(row)
       if (!r) {
         continue
       }

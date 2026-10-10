@@ -62,7 +62,21 @@ function normalizeV0(raw: DataDoc): DataDoc {
     processes: Array.isArray(src.processes) ? src.processes : [],
     records: Array.isArray(src.records) ? src.records : [],
     workers: Array.isArray(src.workers) ? src.workers : [],
-    settings: src.settings ? { ...base.settings, ...src.settings } : cloneSettings(base.settings)
+    settings: src.settings ? mergeSettings(base.settings, src.settings) : cloneSettings(base.settings)
+  }
+}
+
+/** 显式合并设置（避免展开运算符，ArkTS 严格模式限制） */
+export function mergeSettings(base: AppSettings, patch: AppSettings): AppSettings {
+  return {
+    theme: patch.theme !== '' ? patch.theme : base.theme,
+    defaultWorker: patch.defaultWorker !== '' ? patch.defaultWorker : base.defaultWorker,
+    rememberLast: patch.rememberLast,
+    lastProductId: patch.lastProductId !== '' ? patch.lastProductId : base.lastProductId,
+    lastProcessId: patch.lastProcessId !== '' ? patch.lastProcessId : base.lastProcessId,
+    homeRange: patch.homeRange !== '' ? patch.homeRange : base.homeRange,
+    dailyGoal: patch.dailyGoal > 0 ? patch.dailyGoal : base.dailyGoal,
+    monthlyGoal: patch.monthlyGoal > 0 ? patch.monthlyGoal : base.monthlyGoal
   }
 }
 
