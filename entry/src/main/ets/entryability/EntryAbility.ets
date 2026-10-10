@@ -1,10 +1,9 @@
 /**
  * 应用入口 Ability：加载主页面、初始化数据层、监听系统深浅色（auto 主题用）。
  */
-import { AbilityConstant, Configuration, UIAbility, Want } from '@kit.AbilityKit'
+import { AbilityConstant, Configuration, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit'
 import { hilog } from '@kit.PerformanceAnalysisKit'
 import { window } from '@kit.ArkUI'
-import ConfigurationConstant from '@ohos.app.ability.ConfigurationConstant'
 import { AppStore } from '../store/AppStore'
 
 const TAG: string = 'Jijian'
@@ -33,8 +32,8 @@ export default class EntryAbility extends UIAbility {
     // 读取初始系统深浅色
     try {
       const win: window.Window = windowStage.getMainWindowSync()
-      const cm: number = win.getWindowProperties().colorMode
-      store.setSystemDark(cm === 1)
+      const cm: ConfigurationConstant.ColorMode = win.getWindowProperties().colorMode
+      store.setSystemDark(cm === ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
       // 绑定主窗口，用于主题切换时修改窗口颜色模式
       store.setWindow(win)
     } catch (e) {

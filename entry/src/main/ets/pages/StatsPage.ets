@@ -2,13 +2,13 @@
  * 统计 Tab：多区间汇总指标、金额趋势（长区间按月聚合）、近7天趋势、产品占比、
  * 班次对比、近6月对比、工序/工人排行、最高单日、统计长图导出、五表 Excel 导出
  */
-import { componentSnapshot, promptAction } from '@kit.ArkUI'
+import { componentSnapshot, promptAction, ProgressType } from '@kit.ArkUI'
 import { image } from '@kit.ImageKit'
-import { photoAccessHelper } from '@kit.MediaLibraryKit'
-import { abilityAccessCtrl, common } from '@kit.AbilityKit'
+import { photoAccessHelper } from '@ohos.file.photoAccessHelper'
+import { abilityAccessCtrl, bundleManager, common, Permissions } from '@kit.AbilityKit'
 import { picker as documentViewPicker, fileIo as fs } from '@kit.CoreFileKit'
 import { BusinessError } from '@kit.BasicServicesKit'
-import { DataDoc, RankItem, ShareItem, TrendPoint } from '../model/Types'
+import { BestDayInfo, DataDoc, RankItem, ShareItem, TrendPoint } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import {
   EnrichedRecord, enrichRecords, shiftStats, ShiftStat, recent6Months, monthBuckets,
@@ -118,7 +118,7 @@ export struct StatsPage {
   }
 
   /** 最高单日（金额 + 日期） */
-  private best(): { date: string, amount: number } {
+  private best(): BestDayInfo {
     return bestDayInfo(this.inRange())
   }
 
@@ -227,9 +227,10 @@ export struct StatsPage {
   private async saveSnapshot(): Promise<void> {
     const context = getContext(this) as common.UIAbilityContext
     const atManager = abilityAccessCtrl.createAtManager()
-    const perm: string = 'ohos.permission.WRITE_IMAGEVIDEO'
+    const perm: Permissions = 'ohos.permission.WRITE_IMAGEVIDEO' as Permissions
+    const appInfo = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION).appInfo
     let granted: boolean =
-      atManager.checkAccessTokenSync(context.applicationInfo.accessToken, perm) ===
+      atManager.checkAccessTokenSync(appInfo.accessTokenId, perm) ===
       abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED
     if (!granted) {
       const req = await atManager.requestPermissionsFromUser(context, [perm])
@@ -247,11 +248,10 @@ export struct StatsPage {
       try {
         const packer = image.createImagePacker()
         const opt: image.PackingOption = { format: 'image/png', quality: 100 }
-        const buf: ArrayBuffer = await packer.packingToData(data, opt)
+        const buf: ArrayBuffer = await packer.packToData(data, opt)
         const phAccess = photoAccessHelper.getPhotoAccessHelper(context)
-        const createOpt = new photoAccessHelper.PhotoCreateOptions()
-        createOpt.newFileNames = [`计件统计-${todayStr()}.png`]
-        const uri: string = await phAccess.createAsset(createOpt)
+        const fileName: string = `计件统计-${todayStr()}.png`
+        const uri: string = await phAccess.createAsset(photoAccessHelper.PhotoType.IMAGE, fileName, { title: fileName })
         const file = fs.openSync(uri, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE)
         fs.writeSync(file.fd, buf)
         fs.closeSync(file)
@@ -284,7 +284,7 @@ export struct StatsPage {
   }
 
   @Builder
-  chartCard(title: string, chart: () => void) {
+  chartCard(title: string, chart: CustomBuilder) {
     Column({ space: 8 }) {
       Text(title)
         .fontSize(14)
@@ -530,7 +530,7 @@ export struct StatsPage {
                     .fontColor(Theme.text())
                     .width(48)
                   Column({ space: 4 }) {
-                    LinearProgress({ value: s.amount, total: Math.max(this.shiftList()[0].amount + this.shiftList()[1].amount, 1) })
+                    Progress({ value: s.amount, total: Math.max(this.shiftList()[0].amount + this.shiftList()[1].amount, 1), type: ProgressType.Linear })
                       .width('100%')
                       .height(8)
                       .color(s.name === '夜班' ? Theme.orange() : Theme.blue())

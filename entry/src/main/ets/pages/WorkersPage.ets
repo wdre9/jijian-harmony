@@ -9,6 +9,7 @@ import { EnrichedRecord, enrichRecords, sumAmount } from '../utils/StatsUtils'
 import { Theme } from '../common/Theme'
 
 
+@Entry
 @Component
 export struct WorkersPage {
   @State doc: DataDoc = AppStore.getInstance().doc

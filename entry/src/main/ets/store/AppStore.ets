@@ -4,7 +4,7 @@
  * 变更方法返回新引用快照，页面通过 @State doc 接收以触发 UI 刷新。
  */
 import { common } from '@kit.AbilityKit'
-import { window } from '@kit.ArkUI'
+import { ConfigurationConstant, window } from '@kit.ArkUI'
 import { DataStore } from '../db/Database'
 import { PrefStore } from '../db/PrefStore'
 import { BackupUtils } from '../utils/BackupUtils'
@@ -65,8 +65,8 @@ export class AppStore {
   }
 
   /**
-   * 将主题设置应用到系统窗口（状态栏 / 导航栏底色随深色模式切换）：
-   * dark -> 强制深色；light -> 强制浅色；auto -> 跟随系统（-1）。
+   * 将主题设置应用到窗口（状态栏 / 导航栏底色随深色模式切换）：
+   * dark -> 强制深色；light -> 强制浅色；auto -> 跟随系统（COLOR_MODE_NOT_SET）。
    */
   applyThemeToWindow(): void {
     if (this.win === null) {
@@ -74,13 +74,13 @@ export class AppStore {
     }
     try {
       const s: AppSettings = this.doc.settings
-      let mode: number = -1
+      let mode: ConfigurationConstant.ColorMode = ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET
       if (s.theme === 'dark') {
-        mode = 1
+        mode = ConfigurationConstant.ColorMode.COLOR_MODE_DARK
       } else if (s.theme === 'light') {
-        mode = 0
+        mode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT
       }
-      this.win.setWindowColorMode(mode)
+      this.win.getUIContext().setColorMode(mode)
     } catch (e) {
       // 窗口模式设置失败不影响功能
     }

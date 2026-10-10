@@ -147,3 +147,9 @@ export interface ShareItem {
   amount: number
   ratio: number
 }
+
+/** 最高单日（日期 + 金额） */
+export interface BestDayInfo {
+  date: string
+  amount: number
+}

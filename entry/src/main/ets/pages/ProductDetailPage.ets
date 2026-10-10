@@ -13,6 +13,7 @@ interface DetailParams {
   id: string
 }
 
+@Entry
 @Component
 export struct ProductDetailPage {
   @State doc: DataDoc = AppStore.getInstance().doc

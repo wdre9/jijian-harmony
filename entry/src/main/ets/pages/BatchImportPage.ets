@@ -13,6 +13,7 @@ import { Theme } from '../common/Theme'
 
 const GREEN: string = '#36d399'
 
+@Entry
 @Component
 export struct BatchImportPage {
   @State doc: DataDoc = AppStore.getInstance().doc

@@ -12,6 +12,7 @@ import { todayStr } from '../utils/DateUtils'
 import { Theme } from '../common/Theme'
 
 
+@Entry
 @Component
 export struct DataPage {
   @State doc: DataDoc = AppStore.getInstance().doc

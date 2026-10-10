@@ -5,6 +5,7 @@ import { router, promptAction } from '@kit.ArkUI'
 import { Theme } from '../common/Theme'
 
 
+@Entry
 @Component
 export struct AboutPage {
   @State version: string = '0.1.0'

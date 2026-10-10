@@ -9,6 +9,7 @@ import { sumAmount, enrichRecords, EnrichedRecord } from '../utils/StatsUtils'
 import { Theme } from '../common/Theme'
 
 
+@Entry
 @Component
 export struct ProductProcessPage {
   @State doc: DataDoc = AppStore.getInstance().doc

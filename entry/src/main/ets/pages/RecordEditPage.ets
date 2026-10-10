@@ -3,7 +3,7 @@
  */
 import { router } from '@kit.ArkUI'
 import { promptAction } from '@kit.ArkUI'
-import { DataDoc, PieceRecord, Process, Product } from '../model/Types'
+import { DataDoc, PieceRecord, Process, Product, Worker } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import { todayStr, toDateStr } from '../utils/DateUtils'
 import { money, round } from '../utils/FormatUtils'

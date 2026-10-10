@@ -1,7 +1,7 @@
 /**
  * 统计聚合（对齐 jijian-app/src/utils/stats.ts 的核心口径）
  */
-import { PieceRecord, Process, Product, RankItem, ShareItem, TrendPoint } from '../model/Types'
+import { BestDayInfo, PieceRecord, Process, Product, RankItem, ShareItem, TrendPoint } from '../model/Types'
 import { round } from './FormatUtils'
 import { ymOf } from './DateUtils'
 
@@ -304,7 +304,7 @@ export function monthBuckets(list: EnrichedRecord[], start: string, end: string)
 }
 
 /** 最高单日：日期 + 金额（对齐 jijian-app bestDay） */
-export function bestDayInfo(list: EnrichedRecord[]): { date: string, amount: number } {
+export function bestDayInfo(list: EnrichedRecord[]): BestDayInfo {
   const map: Map<string, number> = sumByKey(list, (r) => r.date)
   let maxD: string = ''
   let max: number = 0

@@ -283,18 +283,21 @@ export function shiftSummaryAoa(rows: EnrichedRecord[]): Array<Array<string | nu
       dayRows.push(rows[i])
     }
   }
-  const agg = (list: EnrichedRecord[]): Array<string | number> => {
+  const agg = (list: EnrichedRecord[]): Array<number> => {
     let q: number = 0
     let a: number = 0
     for (let i = 0; i < list.length; i++) {
       q += list[i].quantity
       a += list[i].amount
     }
-    return [list.length, round(q, 3), round(a, 2)]
+    const res: Array<number> = [list.length, round(q, 3), round(a, 2)]
+    return res
   }
   const out: Array<Array<string | number>> = [['班次', '笔数', '件数', '金额(元)']]
-  out.push(['白班'].concat(agg(dayRows)))
-  out.push(['夜班'].concat(agg(nightRows)))
+  const dAgg: Array<number> = agg(dayRows)
+  const nAgg: Array<number> = agg(nightRows)
+  out.push(['白班', dAgg[0], dAgg[1], dAgg[2]])
+  out.push(['夜班', nAgg[0], nAgg[1], nAgg[2]])
   return out
 }
 
