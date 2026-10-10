@@ -2,7 +2,7 @@
  * 数据与导出页：备份导出/导入、CSV/Excel/文本导出、演示数据、清空数据
  */
 import { router, promptAction } from '@kit.ArkUI'
-import { documentViewPicker, fs } from '@kit.CoreFileKit'
+import { picker as documentViewPicker, fileIo as fs } from '@kit.CoreFileKit'
 import { common } from '@kit.AbilityKit'
 import { DataDoc, Process, Product } from '../model/Types'
 import { AppStore } from '../store/AppStore'

@@ -1,7 +1,7 @@
 /**
  * 明细 Tab：日期区间/产品/工人/班次筛选、按日分组、多选批量导出（CSV/Excel/JSON/文本）
  */
-import { documentViewPicker, fs } from '@kit.CoreFileKit'
+import { picker as documentViewPicker, fileIo as fs } from '@kit.CoreFileKit'
 import { router, promptAction } from '@kit.ArkUI'
 import { DataDoc, Product, Worker } from '../model/Types'
 import { AppStore } from '../store/AppStore'
