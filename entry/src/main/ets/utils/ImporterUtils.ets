@@ -28,6 +28,22 @@ function normalizeText(s: string): string {
       out += '.'
     } else if (ch === 'Ｘ' || ch === 'ｘ') {
       out += '×'
+    } else if (code === 0x00b9) {          // ¹ Latin-1 区
+      out += '1'
+    } else if (code === 0x00b2) {          // ²
+      out += '2'
+    } else if (code === 0x00b3) {          // ³
+      out += '3'
+    } else if (code === 0x2070) {          // ⁰ U+2070 区
+      out += '0'
+    } else if (code >= 0x2074 && code <= 0x2079) {  // ⁴-⁹
+      out += String.fromCharCode(code - 0x2070 + 0x30)
+    } else if (code === 0x207a) {          // ⁺ 上标加号
+      out += '+'
+    } else if (code === 0x207b) {          // ⁻ 上标减号
+      out += '-'
+    } else if (code === 0x207c) {          // ⁼ 上标等号
+      out += '='
     } else {
       out += ch
     }
@@ -77,9 +93,9 @@ const TITLE_RE = /年|明细|汇总|合计|总计|小计|报表|工资|对账|�
 /** 尾部残留的 ×数量（无单价） */
 const TRAIL_QTY_RE = /×\s*\d+(?:\.\d+)?\s*$/
 /** 尾部角标 +8 等 */
-const TRAIL_TAG_RE = /[+＋]\s*\d+(?:\.\d+)?\s*$/
+const TRAIL_TAG_RE = /[+＋⁺]\s*\d+(?:\.\d+)?\s*$/
 /** 行首角标 +8 等（货号后紧跟） */
-const LEAD_TAG_RE = /^[+＋]\s*\d+(?:\.\d+)?\s*/
+const LEAD_TAG_RE = /^[+＋⁺]\s*\d+(?:\.\d+)?\s*/
 
 function cleanProcessSuffix(rest: string): string {
   let s: string = rest
