@@ -474,8 +474,7 @@ export struct StatsPage {
             this.showExportSheet = true
           })
         Text('  ')
-        SaveButton()
-          .type(SaveButtonType.CAPTION)
+        SaveButton({ buttonType: ButtonType.Normal })
           .text('导出长图')
           .fontSize(14)
           .fontColor(Theme.blue())
