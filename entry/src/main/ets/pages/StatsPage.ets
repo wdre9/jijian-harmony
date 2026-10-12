@@ -475,7 +475,6 @@ export struct StatsPage {
           })
         Text('  ')
         SaveButton({ buttonType: ButtonType.Normal, text: SaveDescription.DOWNLOAD })
-          .setText('导出长图')
           .fontSize(14)
           .fontColor(Theme.blue())
           .backgroundColor(Theme.card())
