@@ -105,8 +105,8 @@ function cleanProcessSuffix(rest: string): string {
   s = s.replace(QTY_PRICE_RE, '')
   s = s.replace(TRAIL_QTY_RE, '')
   s = s.replace(TAG_RE, '')
-  s = s.replace(/^[\s\-·、,，:：.×*]+/, '')
-  s = s.replace(/[\s\-·、,，:：.×*]+$/, '')
+  s = s.replace(/^[\s\-·、,，:：.×*+＋]+/, '')
+  s = s.replace(/[\s\-·、,，:：.×*+＋]+$/, '')
   return s.trim()
 }
 
@@ -166,8 +166,10 @@ function expandMergedLines(lines: string[], today: string): ExpandedLine[] {
         first = false
       }
       // 末段（若有）与账目合并为账目行；账目前无文本则账目独立成行。日期头回填给首个输出行。
+      // 拼接时在末段与账目之间补空格：OCR 常把货号段（如「9833+22」）与账目段（「630×0.391=246.33」）
+      // 以逗号分隔挤在同一行，若直接拼接会数字粘连（22+630→22630），件数/金额/工序全错。
       const lastSeg: string = segs.length > 0 ? segs[segs.length - 1] : ''
-      push((datePre.length > 0 && first ? `${datePre} ` : '') + lastSeg + rest0.slice(qm.index, cursor))
+      push((datePre.length > 0 && first ? `${datePre} ` : '') + lastSeg + ' ' + rest0.slice(qm.index, cursor))
       first = false
     }
     // 最后一个账目之后的尾文（极少见）：按分隔符拆为上下文行
