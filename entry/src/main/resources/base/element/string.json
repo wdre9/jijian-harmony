@@ -11,10 +11,6 @@
     {
       "name": "app_name",
       "value": "计件"
-    },
-    {
-      "name": "reason_save_stat_image",
-      "value": "用于将统计长图保存到相册"
     }
   ]
 }

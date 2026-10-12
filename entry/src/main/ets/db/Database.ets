@@ -5,7 +5,6 @@
  */
 import relationalStore from '@ohos.data.relationalStore'
 import { common } from '@kit.AbilityKit'
-import { BusinessError } from '@kit.BasicServicesKit'
 import { AppSettings, BackupPackage, DataDoc, PieceRecord, Process, Product, Worker } from '../model/Types'
 import {
   SCHEMA_VERSION,
@@ -109,7 +108,7 @@ export class DataStore {
       // 读取失败按空文档处理，避免白屏
       return emptyDoc()
     }
-    return migrateDoc(doc as object)
+    return migrateDoc(doc)
   }
 
   /** 保存整份文档（事务内全量重写） */

@@ -5,7 +5,6 @@
  */
 import preferences from '@ohos.data.preferences'
 import { common } from '@kit.AbilityKit'
-import { BusinessError } from '@kit.BasicServicesKit'
 
 const PREF_NAME: string = 'jijian_prefs'
 

@@ -5,7 +5,6 @@
 import { componentSnapshot, promptAction } from '@kit.ArkUI'
 import { image } from '@kit.ImageKit'
 import photoAccessHelper from '@ohos.file.photoAccessHelper'
-import { abilityAccessCtrl, bundleManager, common, Permissions } from '@kit.AbilityKit'
 import { picker as documentViewPicker, fileIo as fs } from '@kit.CoreFileKit'
 import { BusinessError } from '@kit.BasicServicesKit'
 import { BestDayInfo, DataDoc, RankItem, ShareItem, TrendPoint } from '../model/Types'
@@ -224,23 +223,8 @@ export struct StatsPage {
     }
   }
 
-  /** 截图统计区域并保存到相册 */
+  /** 截图统计区域并保存到相册（SaveButton 安全控件授权后触发，无需 WRITE_IMAGEVIDEO 权限） */
   private async saveSnapshot(): Promise<void> {
-    const context = getContext(this) as common.UIAbilityContext
-    const atManager = abilityAccessCtrl.createAtManager()
-    const perm: Permissions = 'ohos.permission.WRITE_IMAGEVIDEO' as Permissions
-    const appInfo = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION).appInfo
-    let granted: boolean =
-      atManager.checkAccessTokenSync(appInfo.accessTokenId, perm) ===
-      abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED
-    if (!granted) {
-      const req = await atManager.requestPermissionsFromUser(context, [perm])
-      granted = req.authResults.length > 0 && req.authResults[0] === 0
-      if (!granted) {
-        this.toast('需要相册写入权限才能保存长图')
-        return
-      }
-    }
     componentSnapshot.get('statsArea', async (err: BusinessError, data: image.PixelMap) => {
       if (err) {
         this.toast('截图失败')
@@ -250,7 +234,7 @@ export struct StatsPage {
         const packer = image.createImagePacker()
         const opt: image.PackingOption = { format: 'image/png', quality: 100 }
         const buf: ArrayBuffer = await packer.packToData(data, opt)
-        const phAccess = photoAccessHelper.getPhotoAccessHelper(context)
+        const phAccess = photoAccessHelper.getPhotoAccessHelper(getContext(this))
         const fileName: string = `计件统计-${todayStr()}.png`
         const uri: string = await phAccess.createAsset(photoAccessHelper.PhotoType.IMAGE, fileName, { title: fileName })
         const file = fs.openSync(uri, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE)
@@ -490,11 +474,18 @@ export struct StatsPage {
             this.showExportSheet = true
           })
         Text('  ')
-        Text('导出长图')
+        SaveButton()
+          .type(SaveButtonType.CAPTION)
+          .text('导出长图')
           .fontSize(14)
           .fontColor(Theme.blue())
-          .onClick(() => {
-            this.saveSnapshot()
+          .backgroundColor(Theme.card())
+          .borderRadius(0)
+          .height(48)
+          .onClick((event: ClickEvent, result: SaveButtonOnClickResult) => {
+            if (result === SaveButtonOnClickResult.SUCCESS) {
+              this.saveSnapshot()
+            }
           })
       }
       .width('100%')

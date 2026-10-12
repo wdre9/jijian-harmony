@@ -11,10 +11,6 @@
     {
       "name": "app_name",
       "value": "Jijian"
-    },
-    {
-      "name": "reason_save_stat_image",
-      "value": "Used to save statistics image to gallery"
     }
   ]
 }
