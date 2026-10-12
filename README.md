@@ -11,9 +11,9 @@ Jijian (Piece-Rate Wage Bookkeeping) — a native HarmonyOS NEXT app built with 
 
 ## 项目介绍 · Introduction
 
-「计件」面向计件制工厂/车间记账场景：工人按产品工序计件，班组长或老板快速录入当天产量，按日/周/月查看金额与件数，支持 OCR 拍照识别批量录入（识别文本须同时包含货号、单价、数量）、CSV/Excel/JSON 导出、本地自动备份。
+「计件」面向计件制工厂/车间记账场景：工人按产品工序计件，班组长或老板快速录入当天产量，按日/周/月查看金额与件数，支持 OCR 相册选图识别批量录入（识别文本须同时包含货号、单价、数量）、CSV/Excel/JSON 导出、本地自动备份。
 
-Jijian targets piece-rate workshops: record daily output per product & process, view amount/quantity by day/week/month, OCR batch entry from photos (recognized text must contain item code, unit price and quantity), export to CSV/Excel/JSON, and local automatic backups.
+Jijian targets piece-rate workshops: record daily output per product & process, view amount/quantity by day/week/month, OCR batch entry from album photos (recognized text must contain item code, unit price and quantity), export to CSV/Excel/JSON, and local automatic backups.
 
 ## 功能特性 · Features
 
