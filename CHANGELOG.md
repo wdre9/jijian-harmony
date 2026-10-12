@@ -33,8 +33,8 @@
 
 ### 技术说明 · Technical Notes
 
-- 纯 ArkTS 实现：禁用 `any` / `unknown`，结构化类型用 `class` / `interface`，JSON 解析用 `JSON.parse` + 类型断言辅助。
-  Pure ArkTS: no `any` / `unknown`; structured types via `class` / `interface`; JSON parsed with `JSON.parse` plus type assertions.
+- 纯 ArkTS 实现：禁用 `any` / `unknown`，结构化类型用 `class` / `interface`，JSON 解析用逐字段类型守卫 + 手写递归深拷贝（替代 `JSON.parse` + 类型断言）。
+  Pure ArkTS: no `any` / `unknown`; structured types via `class` / `interface`; JSON parsed with field-level type guards and a handwritten recursive deep clone (no `JSON.parse` type assertions).
 - 存储为单文档：逻辑上把全部业务数据视为一份 DataDoc，写入 RelationalStore 各表并带事务，后续升级可走迁移链。
   Single-document storage: all business data logically forms one DataDoc, written to RelationalStore tables in transactions, with a migration chain for future upgrades.
 - UI 偏好存 `@ohos.data.preferences`：主题、默认工人、记住上次、首页范围、每日/每月目标。
@@ -42,10 +42,12 @@
 
 ### 整改 · Rework (2026-10-12)
 
-- 权限合规：统计长图保存由 `WRITE_IMAGEVIDEO` 动态权限改为 `SaveButton` 安全控件（组件级授权），移除 `module.json5` 权限声明及孤儿文案资源。
-  Compliance: stats snapshot saving switched from `WRITE_IMAGEVIDEO` runtime permission to the `SaveButton` security component (component-level authorization); removed the permission declaration and orphan string resources.
-- 类型安全：JSON 反序列化数据（迁移 / 备份导入 / 快照）改为逐字段类型守卫与手写递归深拷贝，替代 `JSON.parse` + 类型断言。
-  Type safety: JSON-deserialized data (migration / backup import / snapshot) now uses field-level type guards and a handwritten recursive deep clone instead of `JSON.parse` + type assertions.
+- 文档修正：README 中英双语「拍照 / from photos」改为「相册选图 / album photos」，与实际 `PhotoViewPicker` 实现对齐。
+  Docs: README wording fixed from "photo-taking" to "album picking" (EN+CN), aligning with the actual `PhotoViewPicker` implementation.
+- 权限合规：统计长图保存由 `WRITE_IMAGEVIDEO` 动态权限改为 `SaveButton` 安全控件（组件级授权），移除 `module.json5` 权限声明及孤儿文案资源；同步清理 Database / PrefStore 冗余 `BusinessError` import 与 StatsPage 的 `getContext as` 向下转型；不依赖受限权限 `CUSTOMIZE_SAVE_BUTTON`，按钮文案用系统预设（DOWNLOAD）。
+  Compliance: stats snapshot saving switched from `WRITE_IMAGEVIDEO` runtime permission to the `SaveButton` security component (component-level authorization); removed the permission declaration, orphan string resources, and redundant `BusinessError` imports; dropped the `getContext as` downcast in StatsPage; no reliance on restricted `CUSTOMIZE_SAVE_BUTTON` — button text uses the system preset (DOWNLOAD).
+- 类型安全：不安全类型断言（`as`）全部消除——JSON 反序列化（迁移 / 备份导入 / 快照）改为逐字段类型守卫（migrateDoc / parseBackupPackage）与手写递归深拷贝，`doc as object` 等向下转型一并消除。
+  Type safety: all unsafe `as` assertions eliminated — JSON-deserialized data (migration / backup import / snapshot) now uses field-level type guards (migrateDoc / parseBackupPackage) and a handwritten recursive deep clone; `doc as object` downcasts removed too.
 - 设备适配：`deviceTypes` 扩展为 `["phone", "tablet"]`（编译级支持；平板布局优化留待后续版本）。
   Devices: `deviceTypes` extended to `["phone", "tablet"]` (compile-level support; tablet layout optimization deferred to a later release).
 
@@ -63,6 +65,7 @@ This file records changes for Jijian (HarmonyOS NEXT).
 
 ### Rework (2026-10-12)
 
-- Compliance: stats snapshot saving now uses the `SaveButton` security component instead of the `WRITE_IMAGEVIDEO` runtime permission.
-- Type safety: type guards and a handwritten recursive deep clone replace `JSON.parse` + type assertions for untrusted JSON data.
+- Docs: README wording fixed from "photo-taking" to "album picking" (EN+CN), aligning with the actual `PhotoViewPicker` implementation (no CameraKit).
+- Compliance: stats snapshot saving now uses the `SaveButton` security component instead of the `WRITE_IMAGEVIDEO` runtime permission; removed the permission declaration, orphan string resources, and redundant `BusinessError` imports; dropped the `getContext as` downcast; no reliance on restricted `CUSTOMIZE_SAVE_BUTTON` — button text uses the system preset (DOWNLOAD).
+- Type safety: all unsafe `as` assertions eliminated — field-level type guards (migrateDoc / parseBackupPackage) and a handwritten recursive deep clone replace `JSON.parse` + type assertions for untrusted JSON data; `doc as object` downcasts removed too.
 - Devices: `deviceTypes` extended to `["phone", "tablet"]`.
