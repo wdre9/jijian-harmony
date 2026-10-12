@@ -173,10 +173,10 @@ export struct BatchImportPage {
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
         Column({ space: 3 }) {
-          Text('跳过/未解析')
+          Text('跳过标题')
             .fontSize(11)
             .fontColor(Theme.sub())
-          Text(String(this.result ? this.result.skippedCount + this.result.unparsed.length : 0))
+          Text(String(this.result ? this.result.skippedCount : 0))
             .fontSize(18)
             .fontWeight(FontWeight.Bold)
             .fontColor(Theme.red())
