@@ -33,9 +33,27 @@ export function uid(prefix: string): string {
   return `${prefix}${t}${r}`
 }
 
-/** 深拷贝（JSON 往返） */
+/** 深拷贝（手写递归，替代 JSON 往返；仅支持纯 JSON 数据：object/array/string/number/boolean/null） */
 export function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj)) as T
+  if (obj === null || typeof obj !== 'object') {
+    return obj
+  }
+  if (Array.isArray(obj)) {
+    const out: object[] = []
+    const arr: object[] = obj as object[]
+    for (let i = 0; i < arr.length; i++) {
+      out.push(deepClone<object>(arr[i]))
+    }
+    return out as T
+  }
+  const out: Record<string, object> = {}
+  const src: Record<string, object> = obj as Record<string, object>
+  const keys: string[] = Object.keys(src)
+  for (let i = 0; i < keys.length; i++) {
+    const k: string = keys[i]
+    out[k] = deepClone<object>(src[k])
+  }
+  return out as T
 }
 
 /** CSV 单元格转义 */

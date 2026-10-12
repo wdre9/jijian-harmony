@@ -9,8 +9,8 @@ import { DataStore } from '../db/Database'
 import { PrefStore } from '../db/PrefStore'
 import { BackupUtils } from '../utils/BackupUtils'
 import { AppSettings, BackupPackage, DataDoc, PieceRecord, Process, Product, Worker } from '../model/Types'
-import { SCHEMA_VERSION, buildBackup, cloneSettings, DEFAULT_SETTINGS, emptyDoc } from '../model/DataDoc'
-import { round, uid } from '../utils/FormatUtils'
+import { SCHEMA_VERSION, buildBackup, cloneSettings, DEFAULT_SETTINGS, emptyDoc, parseBackupPackage } from '../model/DataDoc'
+import { deepClone, round, uid } from '../utils/FormatUtils'
 
 export class AppStore {
   private static instance: AppStore | null = null
@@ -38,7 +38,7 @@ export class AppStore {
 
   /** 快照（新引用，触发页面刷新） */
   snapshot(): DataDoc {
-    return JSON.parse(JSON.stringify(this.doc)) as DataDoc
+    return deepClone<DataDoc>(this.doc)
   }
 
   /** 当前主题是否深色（含 auto 跟随系统） */
@@ -107,10 +107,8 @@ export class AppStore {
 
   /** 导入备份文本（返回是否成功） */
   async importDocText(text: string): Promise<string> {
-    let pkg: BackupPackage
-    try {
-      pkg = JSON.parse(text) as BackupPackage
-    } catch (e) {
+    const pkg: BackupPackage | null = parseBackupPackage(text)
+    if (pkg === null) {
       return '备份文件不是有效的 JSON'
     }
     const ds: DataStore = DataStore.getInstance()
