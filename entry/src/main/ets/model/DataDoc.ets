@@ -1,7 +1,7 @@
 /**
  * 单文档 + 版本迁移链（对齐 jijian-app/src/db/index.ts 的 SCHEMA_VERSION / migrateDoc）
  */
-import { AppSettings, BackupPackage, DataDoc } from './Types'
+import { AppSettings, BackupPackage, DataDoc, PieceRecord, Process, Product, Worker } from './Types'
 
 /** 当前文档版本 */
 export const SCHEMA_VERSION: number = 1
@@ -32,37 +32,36 @@ export function emptyDoc(): DataDoc {
   }
 }
 
-/** 沿迁移链把任意旧版本数据升级到当前版本 */
+/** 沿迁移链把任意旧版本数据升级到当前版本（类型守卫：逐字段 typeof 检查 + 构建目标类型） */
 export function migrateDoc(raw: object): DataDoc {
-  const anyDoc = raw as DataDoc
-  let version: number = 0
-  if (typeof anyDoc.schemaVersion === 'number') {
-    version = anyDoc.schemaVersion
-  }
-  let doc: DataDoc
-  if (version >= SCHEMA_VERSION) {
-    doc = anyDoc
-  } else {
-    // v0 -> v1：补齐缺失字段，未来新增版本在此追加迁移步骤
-    doc = normalizeV0(anyDoc)
-  }
-  doc.schemaVersion = SCHEMA_VERSION
-  doc.savedAt = Date.now()
-  return doc
+  return normalizeV0(raw)
 }
 
-/** v0 -> v1 归一化：缺失字段用默认值补齐 */
-function normalizeV0(raw: DataDoc): DataDoc {
+/** v0 -> v1 归一化：缺失字段用默认值补齐（raw 来自 JSON 反序列化，不信任其静态类型） */
+function normalizeV0(raw: object): DataDoc {
   const base: DataDoc = emptyDoc()
-  const src: DataDoc = raw
+  const r: Record<string, object> = raw as Record<string, object>
+  const num = (k: string, def: number): number => {
+    const v: object = r[k]
+    return typeof v === 'number' ? (v as number) : def
+  }
+  const arr = (k: string): object[] => {
+    const v: object = r[k]
+    return Array.isArray(v) ? (v as object[]) : []
+  }
+  let settings: AppSettings = cloneSettings(base.settings)
+  const s: object = r['settings']
+  if (s !== null && typeof s === 'object' && !Array.isArray(s)) {
+    settings = mergeSettings(base.settings, s as AppSettings)
+  }
   return {
-    schemaVersion: base.schemaVersion,
-    savedAt: typeof src.savedAt === 'number' ? src.savedAt : Date.now(),
-    products: Array.isArray(src.products) ? src.products : [],
-    processes: Array.isArray(src.processes) ? src.processes : [],
-    records: Array.isArray(src.records) ? src.records : [],
-    workers: Array.isArray(src.workers) ? src.workers : [],
-    settings: src.settings ? mergeSettings(base.settings, src.settings) : cloneSettings(base.settings)
+    schemaVersion: SCHEMA_VERSION,
+    savedAt: num('savedAt', Date.now()),
+    products: arr('products') as Product[],
+    processes: arr('processes') as Process[],
+    records: arr('records') as PieceRecord[],
+    workers: arr('workers') as Worker[],
+    settings: settings
   }
 }
 
@@ -105,6 +104,38 @@ export function buildBackup(doc: DataDoc): BackupPackage {
   }
 }
 
+/** 解析备份包文本为结构化对象（类型守卫：逐字段检查 + 构建目标类型；不合法返回 null） */
+export function parseBackupPackage(text: string): BackupPackage | null {
+  let parsed: object | null = null
+  try {
+    parsed = JSON.parse(text) as object | null
+  } catch (e) {
+    return null
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return null
+  }
+  const r: Record<string, object> = parsed as Record<string, object>
+  const app: string = typeof r['app'] === 'string' ? (r['app'] as string) : ''
+  const kind: string = typeof r['kind'] === 'string' ? (r['kind'] as string) : ''
+  if (app !== 'jijian-pwa' || kind !== 'jijian-backup') {
+    return null
+  }
+  const version: number = typeof r['version'] === 'number' ? (r['version'] as number) : -1
+  const exportedAt: number = typeof r['exportedAt'] === 'number' ? (r['exportedAt'] as number) : -1
+  const docObj: object | null = r['doc']
+  if (docObj === null || typeof docObj !== 'object' || Array.isArray(docObj)) {
+    return null
+  }
+  return {
+    app: app,
+    kind: kind,
+    version: version,
+    exportedAt: exportedAt,
+    doc: migrateDoc(docObj)
+  }
+}
+
 /** 从备份包还原文档：校验格式并沿迁移链升级 */
 export function restoreBackup(pkg: BackupPackage): DataDoc {
   if (!pkg || typeof pkg !== 'object') {
@@ -113,6 +144,6 @@ export function restoreBackup(pkg: BackupPackage): DataDoc {
   if (pkg.kind !== 'jijian-backup') {
     throw new Error(`备份文件格式错误：kind 不是 jijian-backup（实际 ${pkg.kind}）`)
   }
-  const doc: DataDoc = migrateDoc(pkg.doc as object)
+  const doc: DataDoc = migrateDoc(pkg.doc)
   return doc
 }
