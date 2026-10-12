@@ -40,6 +40,15 @@
 - UI 偏好存 `@ohos.data.preferences`：主题、默认工人、记住上次、首页范围、每日/每月目标。
   UI preferences stored in `@ohos.data.preferences`: theme, default worker, remember-last, home range, daily/monthly goals.
 
+### 整改 · Rework (2026-10-12)
+
+- 权限合规：统计长图保存由 `WRITE_IMAGEVIDEO` 动态权限改为 `SaveButton` 安全控件（组件级授权），移除 `module.json5` 权限声明及孤儿文案资源。
+  Compliance: stats snapshot saving switched from `WRITE_IMAGEVIDEO` runtime permission to the `SaveButton` security component (component-level authorization); removed the permission declaration and orphan string resources.
+- 类型安全：JSON 反序列化数据（迁移 / 备份导入 / 快照）改为逐字段类型守卫与手写递归深拷贝，替代 `JSON.parse` + 类型断言。
+  Type safety: JSON-deserialized data (migration / backup import / snapshot) now uses field-level type guards and a handwritten recursive deep clone instead of `JSON.parse` + type assertions.
+- 设备适配：`deviceTypes` 扩展为 `["phone", "tablet"]`（编译级支持；平板布局优化留待后续版本）。
+  Devices: `deviceTypes` extended to `["phone", "tablet"]` (compile-level support; tablet layout optimization deferred to a later release).
+
 ---
 
 # English
@@ -51,3 +60,9 @@ This file records changes for Jijian (HarmonyOS NEXT).
 ### Added
 
 - Initial release: native HarmonyOS rewrite with feature parity to the Android edition (see Chinese section above for details).
+
+### Rework (2026-10-12)
+
+- Compliance: stats snapshot saving now uses the `SaveButton` security component instead of the `WRITE_IMAGEVIDEO` runtime permission.
+- Type safety: type guards and a handwritten recursive deep clone replace `JSON.parse` + type assertions for untrusted JSON data.
+- Devices: `deviceTypes` extended to `["phone", "tablet"]`.
