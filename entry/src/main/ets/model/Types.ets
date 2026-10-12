@@ -87,7 +87,7 @@ export interface BackupPackage {
 /** 批量导入：解析结果（对齐 jijian-app importer.ts ParseResult） */
 export interface ImportParseResult {
   rows: ImportRow[]
-  /** 「计时」「标题」等跳过的行数 */
+  /** 标题/表头等跳过的行数 */
   skippedCount: number
   /** 无法解析的原始行 */
   unparsed: string[]
