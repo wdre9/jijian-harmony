@@ -12,6 +12,8 @@ import { Theme } from '../common/Theme'
 @Component
 export struct HomePage {
   @Prop doc: DataDoc
+  /** 首页概览范围（AppStorage 广播，切换立即生效，无需重建页面） */
+  @StorageProp('homeRange') homeRange: string = 'today'
   onDocChanged: (d: DataDoc) => void = (d: DataDoc) => {
   }
   onJumpRecordEdit: () => void = () => {
@@ -53,6 +55,69 @@ export struct HomePage {
     const list: EnrichedRecord[] = this.todayRecords()
     list.sort((a: EnrichedRecord, b: EnrichedRecord) => (a.createdAt > b.createdAt ? -1 : 1))
     return list.slice(0, 3)
+  }
+
+  private rangeLabel(): string {
+    if (this.homeRange === 'week') {
+      return '本周'
+    }
+    if (this.homeRange === 'month') {
+      return '本月'
+    }
+    return '今日'
+  }
+
+  /** 当前概览范围对应的记录 */
+  private rangeRecords(): EnrichedRecord[] {
+    if (this.homeRange === 'week') {
+      return this.weekRecords()
+    }
+    if (this.homeRange === 'month') {
+      return this.monthRecords()
+    }
+    return this.todayRecords()
+  }
+
+  /** 当前概览范围内最近 3 条（供范围记录列表） */
+  private rangeList(): EnrichedRecord[] {
+    const list: EnrichedRecord[] = this.rangeRecords()
+    list.sort((a: EnrichedRecord, b: EnrichedRecord) => (a.createdAt > b.createdAt ? -1 : 1))
+    return list.slice(0, 3)
+  }
+
+  /** 非当前范围的另两个范围键（顶部大卡已展示当前范围） */
+  private otherRangeKeys(): string[] {
+    if (this.homeRange === 'week') {
+      return ['today', 'month']
+    }
+    if (this.homeRange === 'month') {
+      return ['today', 'week']
+    }
+    return ['week', 'month']
+  }
+
+  private otherRangeLabel(key: string): string {
+    if (key === 'week') {
+      return '本周'
+    }
+    if (key === 'month') {
+      return '本月'
+    }
+    return '今日'
+  }
+
+  private otherRangeRecords(key: string): EnrichedRecord[] {
+    if (key === 'week') {
+      return this.weekRecords()
+    }
+    if (key === 'month') {
+      return this.monthRecords()
+    }
+    return this.todayRecords()
+  }
+
+  private otherRangeColor(key: string): string {
+    return key === 'month' ? Theme.orange() : Theme.blue()
   }
 
   private recent(): EnrichedRecord[] {
@@ -408,15 +473,15 @@ export struct HomePage {
         // 今日卡片
         Row() {
           Column({ space: 4 }) {
-            Text('今日')
+            Text(this.rangeLabel())
               .fontSize(13)
               .fontColor('#ffffff')
               .opacity(0.85)
-            Text(money(sumAmount(this.todayRecords())))
+            Text(money(sumAmount(this.rangeRecords())))
               .fontSize(30)
               .fontWeight(FontWeight.Bold)
               .fontColor('#ffffff')
-            Text(`${qty(sumQty(this.todayRecords()))} 件 · ${this.todayRecords().length} 笔`)
+            Text(`${qty(sumQty(this.rangeRecords()))} 件 · ${this.rangeRecords().length} 笔`)
               .fontSize(12)
               .fontColor('#ffffff')
               .opacity(0.85)
@@ -487,18 +552,20 @@ export struct HomePage {
         .backgroundColor(Theme.card())
         .borderRadius(12)
 
-        // 本周 / 本月概览
+        // 其余两个范围概览（当前范围已在顶部大卡突出展示）
         Row({ space: 12 }) {
-          this.statCard('本周', sumAmount(this.weekRecords()), sumQty(this.weekRecords()), Theme.blue())
-          this.statCard('本月', sumAmount(this.monthRecords()), sumQty(this.monthRecords()), Theme.orange())
+          ForEach(this.otherRangeKeys(), (key: string) => {
+            this.statCard(this.otherRangeLabel(key), sumAmount(this.otherRangeRecords(key)),
+              sumQty(this.otherRangeRecords(key)), this.otherRangeColor(key))
+          }, (key: string) => key)
         }
         .width('100%')
 
-        // 今日记录
-        if (this.todayRecords().length > 0) {
+        // 概览范围记录
+        if (this.rangeRecords().length > 0) {
           Column() {
             Row() {
-              Text('今日记录')
+              Text(`${this.rangeLabel()}记录`)
                 .fontSize(15)
                 .fontWeight(FontWeight.Medium)
                 .fontColor(Theme.text())
@@ -513,7 +580,7 @@ export struct HomePage {
             .width('100%')
             .padding({ left: 14, right: 14, top: 14, bottom: 6 })
 
-            ForEach(this.todayList(), (r: EnrichedRecord) => {
+            ForEach(this.rangeList(), (r: EnrichedRecord) => {
               Row({ space: 10 }) {
                 Column({ space: 2 }) {
                   Text(`${r.productName} · ${r.processName}`)

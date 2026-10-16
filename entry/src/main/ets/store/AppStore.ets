@@ -33,7 +33,29 @@ export class AppStore {
     const ds: DataStore = DataStore.getInstance()
     await ds.init(ctx)
     this.doc = await ds.loadDoc()
+    await this.loadHomeRange()
     this.ready = true
+  }
+
+  /** 首页概览范围归一化：非法值回落 'today' */
+  private normalizeRange(v: string): string {
+    if (v === 'week' || v === 'month') {
+      return v
+    }
+    return 'today'
+  }
+
+  /** 启动时从 PrefStore 轻量键值读取首页范围并广播（PrefStore 优先于整库 settings 表） */
+  private async loadHomeRange(): Promise<void> {
+    let r: string = this.normalizeRange(this.doc.settings.homeRange)
+    try {
+      const v: string = await PrefStore.getString('homeRange', 'today')
+      r = this.normalizeRange(v)
+      this.doc.settings.homeRange = r
+    } catch (e) {
+      // 偏好读取失败时保留 DB 中的范围
+    }
+    AppStorage.setOrCreate<string>('homeRange', r)
   }
 
   /** 快照（新引用，触发页面刷新） */
@@ -95,8 +117,12 @@ export class AppStore {
     this.doc.savedAt = Date.now()
     const ds: DataStore = DataStore.getInstance()
     await ds.saveDoc(this.doc)
-    const pkg: BackupPackage = buildBackup(this.doc)
-    await BackupUtils.maybeAutoBackup(this.ctx, pkg)
+    try {
+      const pkg: BackupPackage = buildBackup(this.doc)
+      await BackupUtils.maybeAutoBackup(this.ctx, pkg)
+    } catch (e) {
+      // 自动备份失败不影响主保存流程
+    }
   }
 
   /** 导出备份文本 */
@@ -124,10 +150,27 @@ export class AppStore {
 
   // ---------- 设置 ----------
 
-  /** 保存完整设置 */
+  /** 保存完整设置（内存先行；落库/备份失败不阻断 UI，避免切换设置时进程异常退出） */
   async updateSettings(s: AppSettings): Promise<DataDoc> {
     this.doc.settings = cloneSettings(s)
-    await this.persist()
+    try {
+      await this.persist()
+    } catch (e) {
+      // 整库事务失败仅影响落库，内存态已更新，下次成功保存会覆盖
+    }
+    return this.snapshot()
+  }
+
+  /** 首页概览范围：轻量键值单独存取，不触发整库事务，切换立即生效 */
+  async setHomeRange(range: string): Promise<DataDoc> {
+    const r: string = this.normalizeRange(range)
+    this.doc.settings.homeRange = r
+    AppStorage.setOrCreate<string>('homeRange', r)
+    try {
+      await PrefStore.setString('homeRange', r)
+    } catch (e) {
+      // 偏好写入失败不影响内存与 UI；下次整库保存仍会同步该字段
+    }
     return this.snapshot()
   }
 

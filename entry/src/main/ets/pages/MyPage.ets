@@ -134,9 +134,9 @@ export struct MyPage {
       .fontColor(this.homeRange === key ? Theme.white() : Theme.text())
       .borderRadius(12)
       .onClick(() => {
-        this.saveSettings((s: AppSettings) => {
-          s.homeRange = key
-        })
+        // 首页范围切换：立即更新高亮并走 PrefStore 轻量键值，不触发整库事务，避免闪退
+        this.homeRange = key
+        this.store.setHomeRange(key)
       })
   }
 
