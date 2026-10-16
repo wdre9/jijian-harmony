@@ -88,7 +88,7 @@ jobs:
           set -e
           HAP_SIGN_TOOL="$COMMANDLINE_TOOL_DIR/sdk/default/openharmony/toolchains/lib/hap-sign-tool.jar"
           ls -l "$HAP_SIGN_TOOL"
-          find entry/build -name '*.hap' -o -name '*.app' | sort
+          find . -name '*.hap' -o -name '*.app' | sort
           # 签名未签名 HAP（云调试/真机安装用）
           for UNSIGNED_HAP in $(find entry/build -name '*.hap' ! -name '*-signed.hap'); do
             SIGNED_HAP="${UNSIGNED_HAP%.hap}-signed.hap"
@@ -106,7 +106,7 @@ jobs:
             rm -f "$UNSIGNED_HAP"
           done
           # 签名未签名 App Pack（AGC 上架用）
-          for UNSIGNED_APP in $(find entry/build -name '*.app' ! -name '*-signed.app'); do
+          for UNSIGNED_APP in $(find . -name '*.app' ! -name '*-signed.app'); do
             SIGNED_APP="${UNSIGNED_APP%.app}-signed.app"
             java -jar "$HAP_SIGN_TOOL" sign-app \
               -keyAlias "$HARMONY_ALIAS" \
@@ -128,7 +128,7 @@ jobs:
           name: jijian-harmony-app
           path: |
             entry/build/**/*.hap
-            entry/build/**/*.app
+            **/*.app
 
       # tag 触发时发布 Release（未签名时明确标注）
       - name: Create GitHub Release
@@ -144,6 +144,6 @@ jobs:
           else
             NOTES="$NOTES\n\n⚠️ **未签名 HAP**：未配置签名 Secrets（HARMONY_P12_BASE64 / HARMONY_P12_PASSWORD / HARMONY_PROFILE_BASE64 / HARMONY_CERT_BASE64 / HARMONY_ALIAS）。请使用 DevEco Studio 打开工程配置签名后重新签名安装，或本机用 hap-sign-tool 离线签名。"
           fi
-          gh release create "$TAG" entry/build/**/*.app \
+          gh release create "$TAG" **/*.app \
             --title "jijian-harmony $TAG" \
             --notes "$NOTES"
