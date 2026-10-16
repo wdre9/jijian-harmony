@@ -72,10 +72,10 @@ jobs:
       - name: Install dependencies
         run: ohpm install --all
 
-      - name: Build HAP
+      - name: Build HAP (release)
         run: |
           hvigorw clean --no-daemon || true
-          hvigorw assembleHap --mode module -p product=default --no-daemon
+          hvigorw assembleReleaseHap --mode module -p product=default --no-daemon
 
       # hvigor 26 的 SignHap 只认 AES-GCM 加密后的密文密码（需 .sign/material 随机块解密），
       # CI 无法生成，故改为构建未签名 HAP 后用官方 hap-sign-tool.jar 离线签名。
@@ -87,9 +87,9 @@ jobs:
         run: |
           HAP_SIGN_TOOL="$COMMANDLINE_TOOL_DIR/sdk/default/openharmony/toolchains/lib/hap-sign-tool.jar"
           ls -l "$HAP_SIGN_TOOL"
-          ls entry/build/default/outputs/default/
-          UNSIGNED_HAP=$(ls entry/build/default/outputs/default/*.hap | head -1)
-          SIGNED_HAP="entry/build/default/outputs/default/jijian-harmony-signed.hap"
+          find entry/build -name '*.hap' -exec ls -l {} \;
+          UNSIGNED_HAP=$(find entry/build -name '*.hap' | head -1)
+          SIGNED_HAP="${UNSIGNED_HAP%.hap}-signed.hap"
           java -jar "$HAP_SIGN_TOOL" sign-app \
             -keyAlias "$HARMONY_ALIAS" \
             -signAlg "SHA256withECDSA" \
@@ -107,7 +107,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jijian-harmony-hap
-          path: entry/build/default/outputs/default/*.hap
+          path: entry/build/**/*.hap
 
       # tag 触发时发布 Release（未签名时明确标注）
       - name: Create GitHub Release
@@ -123,6 +123,6 @@ jobs:
           else
             NOTES="$NOTES\n\n⚠️ **未签名 HAP**：未配置签名 Secrets（HARMONY_P12_BASE64 / HARMONY_P12_PASSWORD / HARMONY_PROFILE_BASE64 / HARMONY_CERT_BASE64 / HARMONY_ALIAS）。请使用 DevEco Studio 打开工程配置签名后重新签名安装，或本机用 hap-sign-tool 离线签名。"
           fi
-          gh release create "$TAG" entry/build/default/outputs/default/*.hap \
+          gh release create "$TAG" entry/build/**/*.hap \
             --title "jijian-harmony $TAG" \
             --notes "$NOTES"
