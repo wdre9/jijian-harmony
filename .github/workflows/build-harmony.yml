@@ -77,6 +77,32 @@ jobs:
           hvigorw clean --no-daemon || true
           hvigorw assembleHap --mode module -p product=default --no-daemon
 
+      # hvigor 26 的 SignHap 只认 AES-GCM 加密后的密文密码（需 .sign/material 随机块解密），
+      # CI 无法生成，故改为构建未签名 HAP 后用官方 hap-sign-tool.jar 离线签名。
+      - name: Sign HAP (hap-sign-tool)
+        if: env.SIGNED == 'signed'
+        env:
+          HARMONY_P12_PASSWORD: ${{ secrets.HARMONY_P12_PASSWORD }}
+          HARMONY_ALIAS: ${{ secrets.HARMONY_ALIAS }}
+        run: |
+          HAP_SIGN_TOOL="$COMMANDLINE_TOOL_DIR/sdk/default/openharmony/toolchains/lib/hap-sign-tool.jar"
+          ls -l "$HAP_SIGN_TOOL"
+          ls entry/build/default/outputs/default/
+          UNSIGNED_HAP=$(ls entry/build/default/outputs/default/*.hap | head -1)
+          SIGNED_HAP="entry/build/default/outputs/default/jijian-harmony-signed.hap"
+          java -jar "$HAP_SIGN_TOOL" sign-app \
+            -keyAlias "$HARMONY_ALIAS" \
+            -signAlg "SHA256withECDSA" \
+            -mode "localSign" \
+            -appCertFile ".sign/harmony.cer" \
+            -profileFile ".sign/harmony.profile" \
+            -inFile "$UNSIGNED_HAP" \
+            -keystoreFile ".sign/harmony.p12" \
+            -outFile "$SIGNED_HAP" \
+            -keyPwd "$HARMONY_P12_PASSWORD" \
+            -keystorePwd "$HARMONY_P12_PASSWORD"
+          rm -f "$UNSIGNED_HAP"
+
       - name: Upload HAP artifact
         uses: actions/upload-artifact@v4
         with:
