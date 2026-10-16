@@ -75,7 +75,7 @@ jobs:
       - name: Build App Pack (release)
         run: |
           hvigorw clean --no-daemon || true
-          hvigorw assembleApp --mode module -p product=default -p buildMode=release --no-daemon
+          hvigorw assembleApp --mode project -p product=default -p buildMode=release --no-daemon
 
       # hvigor 26 的 SignHap 只认 AES-GCM 加密后的密文密码（需 .sign/material 随机块解密），
       # CI 无法生成，故改为构建未签名 HAP 后用官方 hap-sign-tool.jar 离线签名。
