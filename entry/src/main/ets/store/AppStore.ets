@@ -231,13 +231,27 @@ export class AppStore {
   // ---------- 记录 CRUD ----------
 
   async addRecord(date: string, productId: string, processId: string, quantity: number, price: number,
-    worker: string, shift: string, note: string): Promise<DataDoc> {
+    worker: string, shift: string, note: string, processNameSnapshot: string = '',
+    countMode: string = 'auto', count: number = 1): Promise<DataDoc> {
     const now: number = Date.now()
+    // 工序名快照：未显式传入时用工序表当前名回填（工序删除后明细/统计仍显示原工序名）
+    let snap: string = processNameSnapshot
+    if (snap.length === 0 && processId.length > 0) {
+      for (let i = 0; i < this.doc.processes.length; i++) {
+        if (this.doc.processes[i].id === processId) {
+          snap = this.doc.processes[i].name
+        }
+      }
+    }
+    const isManual: boolean = countMode === 'manual'
     const r: PieceRecord = {
       id: uid('r'),
       date: date,
       productId: productId,
       processId: processId,
+      processNameSnapshot: snap,
+      countMode: isManual ? 'manual' : 'auto',
+      count: isManual ? count : 1,
       quantity: quantity,
       price: price,
       amount: round(quantity * price, 2),
@@ -379,6 +393,9 @@ export class AppStore {
           date: dateStr,
           productId: proc.productId,
           processId: proc.id,
+          processNameSnapshot: proc.name,
+          countMode: 'auto',
+          count: 1,
           quantity: q,
           price: proc.price,
           amount: round(q * proc.price, 2),

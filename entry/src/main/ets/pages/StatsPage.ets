@@ -11,7 +11,7 @@ import { BestDayInfo, DataDoc, RankItem, ShareItem, TrendPoint } from '../model/
 import { AppStore } from '../store/AppStore'
 import {
   EnrichedRecord, enrichRecords, shiftStats, ShiftStat, recent6Months, monthBuckets,
-  bestDayInfo, rankBy, sharesOf, sumAmount, sumQty, trendByDay
+  bestDayInfo, rankBy, sharesOf, sumAmount, sumQty, sumCount, trendByDay
 } from '../utils/StatsUtils'
 import { todayStr, weekRangeOf, lastNDaysRange } from '../utils/DateUtils'
 import { money, qty } from '../utils/FormatUtils'
@@ -109,8 +109,25 @@ export struct StatsPage {
     return this.inRange().length
   }
 
+  /** 次数合计（手动模式累加用户输入的 count，自动模式按条数计 1） */
+  private times(): number {
+    return sumCount(this.inRange())
+  }
+
+  /** 有记录的天数（区间内出现记录的唯一日期数） */
+  private activeDays(): number {
+    const list: EnrichedRecord[] = this.inRange()
+    const seen: Map<string, boolean> = new Map<string, boolean>()
+    for (let i = 0; i < list.length; i++) {
+      seen.set(list[i].date, true)
+    }
+    return seen.size
+  }
+
+  /** 日均金额 = 合计金额 / 有记录天数（对齐安卓 dailyAverage 口径） */
   private dailyAvg(): number {
-    return this.count() > 0 ? this.total() / this.rangeDays() : 0
+    const days: number = this.activeDays()
+    return days > 0 ? this.total() / days : 0
   }
 
   private avgPrice(): number {
@@ -196,6 +213,7 @@ export struct StatsPage {
           ['项目', '数值'],
           ['合计金额(元)', total],
           ['件数', qty(this.qtySum())],
+          ['次数', qty(this.times())],
           ['笔数', rows.length],
           ['日均金额(元)', money(this.dailyAvg())],
           ['平均单价(元)', money(this.avgPrice())],
@@ -550,6 +568,7 @@ export struct StatsPage {
           Row({ space: 10 }) {
             this.metricCard('合计金额(元)', money(this.total()), Theme.orange())
             this.metricCard('件数', qty(this.qtySum()))
+            this.metricCard('次数', qty(this.times()))
             this.metricCard('笔数', String(this.count()))
           }
           .width('100%')

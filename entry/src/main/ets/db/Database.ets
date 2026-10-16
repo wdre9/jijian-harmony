@@ -35,6 +35,7 @@ const SQL_PROCESSES: string =
 const SQL_RECORDS: string =
   'CREATE TABLE IF NOT EXISTS records (' +
   'id TEXT PRIMARY KEY, date TEXT NOT NULL, productId TEXT, processId TEXT, ' +
+  'processNameSnapshot TEXT, countMode TEXT DEFAULT \'auto\', count REAL DEFAULT 1, ' +
   'quantity REAL, price REAL, amount REAL, worker TEXT, shift TEXT, note TEXT, ' +
   'createdAt INTEGER, updatedAt INTEGER)'
 const SQL_WORKERS: string =
@@ -79,6 +80,29 @@ export class DataStore {
     const tables: string[] = [SQL_PRODUCTS, SQL_PROCESSES, SQL_RECORDS, SQL_WORKERS, SQL_SETTINGS, SQL_META]
     for (let i = 0; i < tables.length; i++) {
       await this.rdb.executeSql(tables[i])
+    }
+    await this.migrateRecordsTable(this.rdb)
+  }
+
+  /** 旧库 records 表迁移：按缺失列逐项 ALTER ADD COLUMN，旧数据不丢且默认 auto/1 */
+  private async migrateRecordsTable(rdb: relationalStore.RdbStore): Promise<void> {
+    const cols: Set<string> = new Set<string>()
+    const rs = await rdb.querySql('PRAGMA table_info(records)')
+    try {
+      while (rs.goToNextRow()) {
+        cols.add(rs.getString(rs.getColumnIndex('name')))
+      }
+    } finally {
+      rs.close()
+    }
+    if (!cols.has('processNameSnapshot')) {
+      await rdb.executeSql('ALTER TABLE records ADD COLUMN processNameSnapshot TEXT')
+    }
+    if (!cols.has('countMode')) {
+      await rdb.executeSql("ALTER TABLE records ADD COLUMN countMode TEXT DEFAULT 'auto'")
+    }
+    if (!cols.has('count')) {
+      await rdb.executeSql('ALTER TABLE records ADD COLUMN count REAL DEFAULT 1')
     }
   }
 
@@ -156,6 +180,9 @@ export class DataStore {
           'date': r.date,
           'productId': r.productId,
           'processId': r.processId,
+          'processNameSnapshot': r.processNameSnapshot,
+          'countMode': r.countMode,
+          'count': r.count,
           'quantity': r.quantity,
           'price': r.price,
           'amount': r.amount,
@@ -285,6 +312,9 @@ export class DataStore {
           date: rs.getString(rs.getColumnIndex('date')),
           productId: rs.getString(rs.getColumnIndex('productId')),
           processId: rs.getString(rs.getColumnIndex('processId')),
+          processNameSnapshot: rs.getString(rs.getColumnIndex('processNameSnapshot')),
+          countMode: rs.getString(rs.getColumnIndex('countMode')),
+          count: rs.getDouble(rs.getColumnIndex('count')),
           quantity: rs.getDouble(rs.getColumnIndex('quantity')),
           price: rs.getDouble(rs.getColumnIndex('price')),
           amount: rs.getDouble(rs.getColumnIndex('amount')),

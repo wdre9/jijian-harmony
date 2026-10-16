@@ -7,8 +7,8 @@ import { common } from '@kit.AbilityKit'
 import { DataDoc, Process, Product } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import { detailCsv, buildXls, SheetData, detailAoa, countText } from '../utils/ExporterUtils'
-import { EnrichedRecord, enrichRecords } from '../utils/StatsUtils'
-import { todayStr } from '../utils/DateUtils'
+import { EnrichedRecord, enrichRecords, sumCount } from '../utils/StatsUtils'
+import { todayStr, lastNDaysRange } from '../utils/DateUtils'
 import { Theme } from '../common/Theme'
 
 
@@ -16,10 +16,17 @@ import { Theme } from '../common/Theme'
 @Component
 export struct DataPage {
   @State doc: DataDoc = AppStore.getInstance().doc
+  @State exportRange: string = 'all'
   private store: AppStore = AppStore.getInstance()
 
   private rows(): EnrichedRecord[] {
-    return enrichRecords(this.doc.records, this.doc.products, this.doc.processes)
+    const all: EnrichedRecord[] = enrichRecords(this.doc.records, this.doc.products, this.doc.processes)
+    if (this.exportRange === 'all') {
+      return all
+    }
+    const n: number = this.exportRange === '7d' ? 7 : (this.exportRange === '30d' ? 30 : 90)
+    const r = lastNDaysRange(n)
+    return all.filter((x: EnrichedRecord) => x.date >= r.start && x.date <= r.end)
   }
 
   private stamp(): string {
@@ -64,7 +71,7 @@ export struct DataPage {
     const aoa: Array<Array<string | number>> = detailAoa(rows)
     const sheets: SheetData[] = [
       { name: '明细', aoa: aoa },
-      { name: '汇总', aoa: [['计件工资明细表'], ['总笔数', `${rows.length}`], ['总件数', countText(rows)], ['导出时间', todayStr()]] }
+      { name: '汇总', aoa: [['计件工资明细表'], ['总笔数', `${rows.length}`], ['总件数', countText(rows)], ['总次数', `${sumCount(rows)}`], ['导出时间', todayStr()]] }
     ]
     const xml: string = buildXls(sheets)
     await this.saveText(`计件明细-${this.stamp()}.xls`, xml)
@@ -76,11 +83,12 @@ export struct DataPage {
     lines.push('计件工资明细')
     lines.push(`导出时间：${todayStr()}`)
     lines.push('')
-    lines.push('日期\t产品\t规格\t工序\t数量\t单价(元)\t金额(元)\t工人\t班次\t备注')
+    lines.push('日期\t产品\t规格\t工序\t数量\t次数\t单价(元)\t金额(元)\t工人\t班次\t备注')
     for (let i = 0; i < rows.length; i++) {
       const r: EnrichedRecord = rows[i]
+      const cnt: number = r.countMode === 'manual' ? (typeof r.count === 'number' ? r.count : 1) : 1
       lines.push(
-        `${r.date}\t${r.productName}\t${r.spec}\t${r.processName}\t${r.quantity}\t${r.price}\t${r.amount}\t${r.worker || ''}\t${r.shift === 'night' ? '夜班' : '白班'}\t${r.note || ''}`
+        `${r.date}\t${r.productName}\t${r.spec}\t${r.processName}\t${r.quantity}\t${cnt}\t${r.price}\t${r.amount}\t${r.worker || ''}\t${r.shift === 'night' ? '夜班' : '白班'}\t${r.note || ''}`
       )
     }
     await this.saveText(`计件明细-${this.stamp()}.txt`, lines.join('\r\n'))
@@ -148,6 +156,47 @@ export struct DataPage {
       this.doc = await this.store.clearAll()
       this.toast('已清空')
     }
+  }
+
+  @Builder
+  exportRangeBar() {
+    Column({ space: 6 }) {
+      Text('明细导出范围')
+        .fontSize(12)
+        .fontColor(Theme.sub())
+      Row({ space: 8 }) {
+        ForEach(['all', '7d', '30d', '90d'] as string[], (key: string) => {
+          Text(this.rangeLabel(key))
+            .fontSize(12)
+            .fontColor(this.exportRange === key ? Theme.blue() : Theme.sub())
+            .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+            .backgroundColor(this.exportRange === key ? Theme.weakBlue() : Theme.chip())
+            .borderRadius(14)
+            .onClick(() => {
+              this.exportRange = key
+            })
+        }, (key: string) => key)
+      }
+      .width('100%')
+    }
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+    .padding(10)
+    .backgroundColor(Theme.card())
+    .borderRadius(10)
+  }
+
+  private rangeLabel(key: string): string {
+    if (key === 'all') {
+      return '全部'
+    }
+    if (key === '7d') {
+      return '近7天'
+    }
+    if (key === '30d') {
+      return '近30天'
+    }
+    return '近90天'
   }
 
   @Builder
@@ -256,6 +305,7 @@ export struct DataPage {
 
       Scroll() {
         Column({ space: 8 }) {
+          this.exportRangeBar()
           this.group('导出', ['exportJson', 'exportCsv', 'exportXls', 'exportTxt'])
           this.group('导入与维护', ['importJson', 'demo', 'clear'])
           this.group('关于', ['stats'])

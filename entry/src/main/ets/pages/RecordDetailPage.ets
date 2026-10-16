@@ -29,6 +29,10 @@ struct RecordDetailPage {
   }
 
   private processName(id: string): string {
+    const r = this.record()
+    if (r && r.processNameSnapshot) {
+      return r.processNameSnapshot
+    }
     const c = this.doc.processes.find((x) => x.id === id)
     return c ? c.name : '未知工序'
   }
@@ -126,6 +130,18 @@ struct RecordDetailPage {
                 .fontColor(Theme.sub())
                 .width(80)
               Text(this.record() ? this.processName(this.record()!.processId) : '')
+                .fontSize(15)
+            }
+            .width('100%')
+            .padding(12)
+            Divider().color(Theme.chip())
+
+            Row() {
+              Text('次数')
+                .fontSize(13)
+                .fontColor(Theme.sub())
+                .width(80)
+              Text(this.record() ? `${this.record()!.countMode === 'manual' ? '手动' : '自动'} · ${typeof this.record()!.count === 'number' ? this.record()!.count : 1} 次` : '')
                 .fontSize(15)
             }
             .width('100%')

@@ -10,6 +10,9 @@ export interface EnrichedRecord extends PieceRecord {
   productName: string
   processName: string
   spec: string
+  processNameSnapshot: string
+  countMode: string
+  count: number
 }
 
 /** 富化：为记录补充名称字段（按 id 查表） */
@@ -27,11 +30,21 @@ export function enrichRecords(records: PieceRecord[], products: Product[], proce
     const r: PieceRecord = records[i]
     const p: Product | undefined = pMap.get(r.productId)
     const c: Process | undefined = cMap.get(r.processId)
+    // 工序名优先使用快照（工序删除后仍显示原工序名）
+    let pname: string = ''
+    if (typeof r.processNameSnapshot === 'string' && r.processNameSnapshot.length > 0) {
+      pname = r.processNameSnapshot
+    } else {
+      pname = c ? c.name : '未知工序'
+    }
     const er: EnrichedRecord = {
       id: r.id,
       date: r.date,
       productId: r.productId,
       processId: r.processId,
+      processNameSnapshot: typeof r.processNameSnapshot === 'string' ? r.processNameSnapshot : '',
+      countMode: typeof r.countMode === 'string' ? r.countMode : 'auto',
+      count: typeof r.count === 'number' ? r.count : 1,
       quantity: r.quantity,
       price: r.price,
       amount: r.amount,
@@ -41,7 +54,7 @@ export function enrichRecords(records: PieceRecord[], products: Product[], proce
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       productName: p ? p.name : r.productId,
-      processName: c ? c.name : '未知工序',
+      processName: pname,
       spec: p ? p.spec : ''
     }
     out.push(er)
@@ -65,6 +78,20 @@ export function sumQty(list: EnrichedRecord[]): number {
     s += list[i].quantity || 0
   }
   return round(s, 3)
+}
+
+/** 次数合计（手动模式累加用户输入的 count，自动模式按条数计 1，对齐 jijian-app times） */
+export function sumCount(list: EnrichedRecord[]): number {
+  let s: number = 0
+  for (let i = 0; i < list.length; i++) {
+    const r: EnrichedRecord = list[i]
+    if (r.countMode === 'manual') {
+      s += typeof r.count === 'number' ? r.count : 1
+    } else {
+      s += 1
+    }
+  }
+  return round(s, 2)
 }
 
 /** 按日期分组（升序） */

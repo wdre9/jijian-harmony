@@ -33,20 +33,22 @@ export interface SheetData {
   aoa: Array<Array<string | number>>
 }
 
-/** 明细表表头（任务要求表头：日期/产品/规格/工序/数量/单价(元)/金额(元)/工人/班次/备注） */
-export const DETAIL_HEADER: string[] = ['日期', '产品', '规格', '工序', '数量', '单价(元)', '金额(元)', '工人', '班次', '备注']
+/** 明细表表头（任务要求表头：日期/产品/规格/工序/数量/单价(元)/金额(元)/工人/班次/备注，含次数列） */
+export const DETAIL_HEADER: string[] = ['日期', '产品', '规格', '工序', '数量', '次数', '单价(元)', '金额(元)', '工人', '班次', '备注']
 
 /** 明细记录 -> 二维数组 */
 export function detailAoa(rows: EnrichedRecord[]): Array<Array<string | number>> {
   const body: Array<Array<string | number>> = []
   for (let i = 0; i < rows.length; i++) {
     const r: EnrichedRecord = rows[i]
+    const cnt: number = r.countMode === 'manual' ? (typeof r.count === 'number' ? r.count : 1) : 1
     body.push([
       r.date,
       r.productName,
       r.spec,
       r.processName,
       r.quantity,
+      cnt,
       priceText(r.price),
       r.amount,
       r.worker || '',

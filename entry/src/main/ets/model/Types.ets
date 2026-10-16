@@ -33,6 +33,12 @@ export interface PieceRecord {
   date: string
   productId: string
   processId: string
+  /** 工序名快照：保存时写入，工序删除后明细/统计仍显示原工序名 */
+  processNameSnapshot: string
+  /** 'auto'（按条数计 1 次）| 'manual'（按用户输入件次计） */
+  countMode: string
+  /** 件次：auto 恒为 1；manual 为用户输入件次 */
+  count: number
   quantity: number
   price: number
   amount: number

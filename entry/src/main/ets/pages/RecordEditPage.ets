@@ -22,6 +22,12 @@ struct RecordEditPage {
   @State dateText: string = todayStr()
   @State productId: string = ''
   @State processId: string = ''
+  /** 'existing' 已有工序 | 'custom' 手动输入 | 'none' 不填（未分类） */
+  @State processMode: string = 'existing'
+  @State customProcessName: string = ''
+  /** 'auto' 按条数 | 'manual' 手动输入件次 */
+  @State countMode: string = 'auto'
+  @State countText: string = '1'
   @State quantityText: string = '1'
   @State priceText: string = '0'
   @State workerText: string = ''
@@ -41,6 +47,10 @@ struct RecordEditPage {
         this.dateText = r.date
         this.productId = r.productId
         this.processId = r.processId
+        this.processMode = r.processId.length > 0 ? 'existing' : (r.processNameSnapshot.length > 0 ? 'custom' : 'none')
+        this.customProcessName = r.processId.length > 0 ? '' : r.processNameSnapshot
+        this.countMode = typeof r.countMode === 'string' ? r.countMode : 'auto'
+        this.countText = String(typeof r.count === 'number' && r.count > 0 ? r.count : 1)
         this.quantityText = String(r.quantity)
         this.priceText = String(r.price)
         this.workerText = r.worker
@@ -96,14 +106,28 @@ struct RecordEditPage {
   private selectProduct(p: Product): void {
     this.productId = p.id
     this.processId = ''
+    this.processMode = 'existing'
     this.priceText = '0'
     this.showProductSheet = false
   }
 
   private selectProcess(c: Process): void {
     this.processId = c.id
+    this.processMode = 'existing'
+    this.customProcessName = ''
     this.priceText = String(c.price)
     this.showProcessSheet = false
+  }
+
+  private currentProcessName(): string {
+    if (this.processMode === 'custom') {
+      return this.customProcessName.trim()
+    }
+    if (this.processMode === 'none') {
+      return ''
+    }
+    const c: Process | undefined = this.currentProcess()
+    return c ? c.name : ''
   }
 
   private toast(msg: string): void {
@@ -118,8 +142,36 @@ struct RecordEditPage {
       this.toast('请选择产品')
       return
     }
-    if (!this.processId) {
-      this.toast('请选择工序')
+    let snap: string = ''
+    let finalProcessId: string = ''
+    if (this.processMode === 'existing') {
+      if (!this.processId) {
+        this.toast('请选择工序')
+        return
+      }
+      const c: Process | undefined = this.currentProcess()
+      if (!c) {
+        this.toast('工序不存在，请重新选择')
+        return
+      }
+      finalProcessId = c.id
+      snap = c.name
+    } else if (this.processMode === 'custom') {
+      const name: string = this.customProcessName.trim()
+      if (!name) {
+        this.toast('请输入工序名称')
+        return
+      }
+      finalProcessId = ''
+      snap = name
+    } else {
+      finalProcessId = ''
+      snap = ''
+    }
+    const isManual: boolean = this.countMode === 'manual'
+    const cnt: number = isManual ? (parseFloat(this.countText) || 0) : 1
+    if (isManual && !(cnt > 0)) {
+      this.toast('件次需大于 0')
       return
     }
     const q: number = parseFloat(this.quantityText) || 0
@@ -141,7 +193,10 @@ struct RecordEditPage {
           id: this.editId,
           date: this.dateText,
           productId: this.productId,
-          processId: this.processId,
+          processId: finalProcessId,
+          processNameSnapshot: snap,
+          countMode: isManual ? 'manual' : 'auto',
+          count: isManual ? cnt : 1,
           quantity: q,
           price: p,
           amount: round(q * p, 2),
@@ -154,8 +209,9 @@ struct RecordEditPage {
         this.doc = await this.store.updateRecord(r)
       } else {
         this.doc = await this.store.addRecord(
-          this.dateText, this.productId, this.processId, q, p,
-          this.workerText.trim(), this.shift, this.noteText.trim())
+          this.dateText, this.productId, finalProcessId, q, p,
+          this.workerText.trim(), this.shift, this.noteText.trim(), snap,
+          isManual ? 'manual' : 'auto', isManual ? cnt : 1)
       }
       this.toast(this.editId ? '已保存' : '记账成功')
       router.back()
@@ -301,34 +357,143 @@ struct RecordEditPage {
           })
           .bindSheet(this.showProductSheet, this.productSheet(), { height: 420 })
 
-          // 工序
-          Row() {
-            Column({ space: 4 }) {
-              Text('工序')
-                .fontSize(12)
-                .fontColor(Theme.sub())
-              Text(this.currentProcess() ? this.currentProcess()!.name : '点击选择工序')
-                .fontSize(15)
-                .fontColor(this.currentProcess() ? Theme.text() : Theme.blue())
+          // 工序（三态：已有 / 手动输入 / 不填未分类）
+          Column({ space: 8 }) {
+            Text('工序')
+              .fontSize(12)
+              .fontColor(Theme.sub())
+            Row({ space: 8 }) {
+              Text('已有')
+                .fontSize(13)
+                .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+                .backgroundColor(this.processMode === 'existing' ? Theme.blue() : Theme.chip())
+                .fontColor(this.processMode === 'existing' ? Theme.card() : Theme.text())
+                .borderRadius(14)
+                .onClick(() => {
+                  this.processMode = 'existing'
+                  if (!this.productId) {
+                    this.toast('请先选择产品')
+                  } else if (!this.processId) {
+                    this.showProcessSheet = true
+                  }
+                })
+              Text('手动输入')
+                .fontSize(13)
+                .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+                .backgroundColor(this.processMode === 'custom' ? Theme.blue() : Theme.chip())
+                .fontColor(this.processMode === 'custom' ? Theme.card() : Theme.text())
+                .borderRadius(14)
+                .onClick(() => {
+                  this.processMode = 'custom'
+                })
+              Text('不填(未分类)')
+                .fontSize(13)
+                .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+                .backgroundColor(this.processMode === 'none' ? Theme.blue() : Theme.chip())
+                .fontColor(this.processMode === 'none' ? Theme.card() : Theme.text())
+                .borderRadius(14)
+                .onClick(() => {
+                  this.processMode = 'none'
+                  this.processId = ''
+                  this.customProcessName = ''
+                })
             }
-            .alignItems(HorizontalAlign.Start)
-            .layoutWeight(1)
-            Text('›')
-              .fontSize(18)
-              .fontColor(Theme.divider())
+            if (this.processMode === 'existing') {
+              Row() {
+                Column({ space: 4 }) {
+                  Text(this.currentProcess() ? this.currentProcess()!.name : '点击选择工序')
+                    .fontSize(15)
+                    .fontColor(this.currentProcess() ? Theme.text() : Theme.blue())
+                }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                Text('›')
+                  .fontSize(18)
+                  .fontColor(Theme.divider())
+              }
+              .width('100%')
+              .padding(10)
+              .backgroundColor(Theme.line())
+              .borderRadius(8)
+              .onClick(() => {
+                if (!this.productId) {
+                  this.toast('请先选择产品')
+                  return
+                }
+                this.showProcessSheet = true
+              })
+              .bindSheet(this.showProcessSheet, this.processSheet(), { height: 420 })
+            } else if (this.processMode === 'custom') {
+              TextInput({ text: this.customProcessName, placeholder: '输入自定义工序名' })
+                .width('100%')
+                .height(36)
+                .fontSize(14)
+                .onChange((v: string) => {
+                  this.customProcessName = v
+                })
+            } else {
+              Row() {
+                Text('未分类（不填工序）')
+                  .fontSize(14)
+                  .fontColor(Theme.sub())
+              }
+              .width('100%')
+              .padding(10)
+              .backgroundColor(Theme.line())
+              .borderRadius(8)
+            }
           }
           .width('100%')
           .padding(14)
           .backgroundColor(Theme.card())
           .borderRadius(10)
-          .onClick(() => {
-            if (!this.productId) {
-              this.toast('请先选择产品')
-              return
+          .alignItems(HorizontalAlign.Start)
+
+          // 次数（件次）：自动按条数计 1 / 手动输入件次
+          Column({ space: 8 }) {
+            Text('次数')
+              .fontSize(12)
+              .fontColor(Theme.sub())
+            Row({ space: 8 }) {
+              Text('按条数(自动)')
+                .fontSize(13)
+                .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+                .backgroundColor(this.countMode === 'auto' ? Theme.blue() : Theme.chip())
+                .fontColor(this.countMode === 'auto' ? Theme.card() : Theme.text())
+                .borderRadius(14)
+                .onClick(() => {
+                  this.countMode = 'auto'
+                })
+              Text('手动输入件次')
+                .fontSize(13)
+                .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+                .backgroundColor(this.countMode === 'manual' ? Theme.blue() : Theme.chip())
+                .fontColor(this.countMode === 'manual' ? Theme.card() : Theme.text())
+                .borderRadius(14)
+                .onClick(() => {
+                  this.countMode = 'manual'
+                })
             }
-            this.showProcessSheet = true
-          })
-          .bindSheet(this.showProcessSheet, this.processSheet(), { height: 420 })
+            if (this.countMode === 'manual') {
+              TextInput({ text: this.countText, placeholder: '件次，如 12' })
+                .width('100%')
+                .height(36)
+                .fontSize(14)
+                .type(InputType.Normal)
+                .onChange((v: string) => {
+                  this.countText = v
+                })
+            } else {
+              Text('每条记录计 1 次')
+                .fontSize(13)
+                .fontColor(Theme.sub())
+            }
+          }
+          .width('100%')
+          .padding(14)
+          .backgroundColor(Theme.card())
+          .borderRadius(10)
+          .alignItems(HorizontalAlign.Start)
 
           // 数量 / 单价 / 金额
           Row({ space: 10 }) {

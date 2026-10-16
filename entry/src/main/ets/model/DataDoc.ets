@@ -4,7 +4,7 @@
 import { AppSettings, BackupPackage, DataDoc, PieceRecord, Process, Product, Worker } from './Types'
 
 /** 当前文档版本 */
-export const SCHEMA_VERSION: number = 1
+export const SCHEMA_VERSION: number = 2
 
 /** 默认设置 */
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -34,7 +34,54 @@ export function emptyDoc(): DataDoc {
 
 /** 沿迁移链把任意旧版本数据升级到当前版本（类型守卫：逐字段 typeof 检查 + 构建目标类型） */
 export function migrateDoc(raw: object): DataDoc {
-  return normalizeV0(raw)
+  return normalizeV1(normalizeV0(raw))
+}
+
+/** v1 -> v2 归一化：records 补 countMode/count/processNameSnapshot 默认值；快照缺失时用现有工序名回填 */
+function normalizeV1(base: DataDoc): DataDoc {
+  const nameById: Map<string, string> = new Map<string, string>()
+  for (let i = 0; i < base.processes.length; i++) {
+    nameById.set(base.processes[i].id, base.processes[i].name)
+  }
+  const records: PieceRecord[] = []
+  for (let i = 0; i < base.records.length; i++) {
+    const r: PieceRecord = base.records[i]
+    let snap: string = typeof r.processNameSnapshot === 'string' ? r.processNameSnapshot : ''
+    if (snap.length === 0) {
+      const n: string | undefined = nameById.get(r.processId)
+      if (n !== undefined) {
+        snap = n
+      }
+    }
+    const mode: string = typeof r.countMode === 'string' ? r.countMode : 'auto'
+    const cnt: number = typeof r.count === 'number' ? r.count : 1
+    records.push({
+      id: r.id,
+      date: r.date,
+      productId: r.productId,
+      processId: r.processId,
+      processNameSnapshot: snap,
+      countMode: mode === 'manual' ? 'manual' : 'auto',
+      count: cnt,
+      quantity: r.quantity,
+      price: r.price,
+      amount: r.amount,
+      worker: r.worker,
+      shift: r.shift,
+      note: r.note,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt
+    })
+  }
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    savedAt: base.savedAt,
+    products: base.products,
+    processes: base.processes,
+    records: records,
+    workers: base.workers,
+    settings: base.settings
+  }
 }
 
 /** v0 -> v1 归一化：缺失字段用默认值补齐（raw 来自 JSON 反序列化，不信任其静态类型） */

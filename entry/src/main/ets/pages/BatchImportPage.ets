@@ -144,7 +144,7 @@ export struct BatchImportPage {
         }
         this.doc = await this.store.addRecord(
           row.date, r.product.id, r.process.id, row.quantity, row.price,
-          row.worker || this.worker, row.shift, row.note)
+          row.worker || this.worker, row.shift, row.note, r.process.name, 'auto', 1)
         okCount++
       }
       this.importedCount = okCount
