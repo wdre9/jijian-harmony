@@ -32,6 +32,6 @@ if (!env.p12 || !env.p12Pwd || !env.profileB64 || !env.cert || !env.alias) {
 const signDir = join(root, '.sign')
 mkdirSync(signDir, { recursive: true })
 writeFileSync(join(signDir, 'harmony.p12'), Buffer.from(env.p12, 'base64'))
-writeFileSync(join(signDir, 'harmony.profile'), Buffer.from(env.profileB64, 'base64'))
+writeFileSync(join(signDir, 'harmony.p7b'), Buffer.from(env.profileB64, 'base64'))
 writeFileSync(join(signDir, 'harmony.cer'), Buffer.from(env.cert, 'base64'))
 console.log('signed')

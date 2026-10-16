@@ -95,7 +95,7 @@ jobs:
             -signAlg "SHA256withECDSA" \
             -mode "localSign" \
             -appCertFile ".sign/harmony.cer" \
-            -profileFile ".sign/harmony.profile" \
+            -profileFile ".sign/harmony.p7b" \
             -inFile "$UNSIGNED_HAP" \
             -keystoreFile ".sign/harmony.p12" \
             -outFile "$SIGNED_HAP" \
