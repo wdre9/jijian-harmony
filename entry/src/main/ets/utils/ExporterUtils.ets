@@ -41,7 +41,7 @@ export function detailAoa(rows: EnrichedRecord[]): Array<Array<string | number>>
   const body: Array<Array<string | number>> = []
   for (let i = 0; i < rows.length; i++) {
     const r: EnrichedRecord = rows[i]
-    const cnt: number = r.countMode === 'manual' ? (typeof r.count === 'number' ? r.count : 1) : 1
+    const cnt: string | number = r.countMode === 'manual' ? (typeof r.count === 'number' ? r.count : 1) : ''
     body.push([
       r.date,
       r.productName,

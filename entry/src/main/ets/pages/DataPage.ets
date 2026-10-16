@@ -8,7 +8,7 @@ import { DataDoc, Process, Product } from '../model/Types'
 import { AppStore } from '../store/AppStore'
 import { detailCsv, buildXls, SheetData, detailAoa, countText } from '../utils/ExporterUtils'
 import { EnrichedRecord, enrichRecords, sumCount } from '../utils/StatsUtils'
-import { todayStr, lastNDaysRange } from '../utils/DateUtils'
+import { todayStr, lastNDaysRange, monthRangeOf } from '../utils/DateUtils'
 import { Theme } from '../common/Theme'
 
 
@@ -24,8 +24,7 @@ export struct DataPage {
     if (this.exportRange === 'all') {
       return all
     }
-    const n: number = this.exportRange === '7d' ? 7 : (this.exportRange === '30d' ? 30 : 90)
-    const r = lastNDaysRange(n)
+    const r = this.exportRange === 'month' ? monthRangeOf(0) : lastNDaysRange(90)
     return all.filter((x: EnrichedRecord) => x.date >= r.start && x.date <= r.end)
   }
 
@@ -86,7 +85,7 @@ export struct DataPage {
     lines.push('日期\t产品\t规格\t工序\t数量\t次数\t单价(元)\t金额(元)\t工人\t班次\t备注')
     for (let i = 0; i < rows.length; i++) {
       const r: EnrichedRecord = rows[i]
-      const cnt: number = r.countMode === 'manual' ? (typeof r.count === 'number' ? r.count : 1) : 1
+      const cnt: string | number = r.countMode === 'manual' ? (typeof r.count === 'number' ? r.count : 1) : ''
       lines.push(
         `${r.date}\t${r.productName}\t${r.spec}\t${r.processName}\t${r.quantity}\t${cnt}\t${r.price}\t${r.amount}\t${r.worker || ''}\t${r.shift === 'night' ? '夜班' : '白班'}\t${r.note || ''}`
       )
@@ -165,7 +164,7 @@ export struct DataPage {
         .fontSize(12)
         .fontColor(Theme.sub())
       Row({ space: 8 }) {
-        ForEach(['all', '7d', '30d', '90d'] as string[], (key: string) => {
+        ForEach(['all', 'month', '90d'] as string[], (key: string) => {
           Text(this.rangeLabel(key))
             .fontSize(12)
             .fontColor(this.exportRange === key ? Theme.blue() : Theme.sub())
@@ -190,11 +189,8 @@ export struct DataPage {
     if (key === 'all') {
       return '全部'
     }
-    if (key === '7d') {
-      return '近7天'
-    }
-    if (key === '30d') {
-      return '近30天'
+    if (key === 'month') {
+      return '本月'
     }
     return '近90天'
   }

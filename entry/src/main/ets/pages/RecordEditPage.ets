@@ -50,7 +50,7 @@ struct RecordEditPage {
         this.processMode = r.processId.length > 0 ? 'existing' : (r.processNameSnapshot.length > 0 ? 'custom' : 'none')
         this.customProcessName = r.processId.length > 0 ? '' : r.processNameSnapshot
         this.countMode = typeof r.countMode === 'string' ? r.countMode : 'auto'
-        this.countText = String(typeof r.count === 'number' && r.count > 0 ? r.count : 1)
+        this.countText = String(typeof r.count === 'number' ? r.count : 1)
         this.quantityText = String(r.quantity)
         this.priceText = String(r.price)
         this.workerText = r.worker
@@ -169,11 +169,7 @@ struct RecordEditPage {
       snap = ''
     }
     const isManual: boolean = this.countMode === 'manual'
-    const cnt: number = isManual ? (parseFloat(this.countText) || 0) : 1
-    if (isManual && !(cnt > 0)) {
-      this.toast('件次需大于 0')
-      return
-    }
+    const cnt: number = isManual ? Math.max(0, Math.round(parseFloat(this.countText) || 0)) : 1
     const q: number = parseFloat(this.quantityText) || 0
     const p: number = parseFloat(this.priceText) || 0
     if (!(q > 0)) {

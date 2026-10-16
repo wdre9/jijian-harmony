@@ -45,7 +45,11 @@ function normalizeV1(base: DataDoc): DataDoc {
   }
   const records: PieceRecord[] = []
   for (let i = 0; i < base.records.length; i++) {
-    const r: PieceRecord = base.records[i]
+    const rv: object = base.records[i] as object
+    if (rv === null || typeof rv !== 'object') {
+      continue
+    }
+    const r: PieceRecord = rv as PieceRecord
     let snap: string = typeof r.processNameSnapshot === 'string' ? r.processNameSnapshot : ''
     if (snap.length === 0) {
       const n: string | undefined = nameById.get(r.processId)
