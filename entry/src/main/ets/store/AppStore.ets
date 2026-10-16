@@ -18,6 +18,8 @@ export class AppStore {
   ready: boolean = false
   private ctx: common.UIAbilityContext | null = null
   private win: window.Window | null = null
+  /** 最近一次已应用到系统的 ColorMode，用于去重，防止 setColorMode -> onConfigurationUpdate -> setColorMode 无限递归 */
+  private lastAppliedColorMode: ConfigurationConstant.ColorMode | null = null
 
   static getInstance(): AppStore {
     if (AppStore.instance === null) {
@@ -102,6 +104,12 @@ export class AppStore {
       } else if (s.theme === 'light') {
         mode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT
       }
+      // 去重保护：setColorMode 会再次触发 onConfigurationUpdate 回调，
+      // 若不做去重，相同 mode 会被反复设置，形成无限递归导致栈溢出（RangeError: Stack overflow）。
+      if (this.lastAppliedColorMode === mode) {
+        return
+      }
+      this.lastAppliedColorMode = mode
       this.ctx.getApplicationContext().setColorMode(mode)
     } catch (e) {
       // 窗口模式设置失败不影响功能
