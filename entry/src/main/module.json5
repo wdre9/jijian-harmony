@@ -11,6 +11,22 @@
     "deliveryWithInstall": true,
     "installationFree": false,
     "pages": "$profile:main_pages",
+    // AGC 隐私托管（AppGallery Kit 隐私管理服务）：通过 metadata 预设隐私声明与用户协议链接，
+    // 对应 AGC 控制台「服务-协议服务」中已生效的托管协议（隐私政策云托管 URL 与用户协议链接）。
+    "metadata": [
+      {
+        "name": "appgallery_privacy_hosted",
+        "value": "1"
+      },
+      {
+        "name": "appgallery_privacy_link_privacy_statement",
+        "value": "https://agreement-drcn.hispace.dbankcloud.cn/index.html?lang=zh&agreementId=2063176678921788096"
+      },
+      {
+        "name": "appgallery_privacy_link_user_agreement",
+        "value": "https://jijianapp.top"
+      }
+    ],
     "abilities": [
       {
         "name": "EntryAbility",

@@ -1,7 +1,8 @@
 /**
  * 关于页：版本信息、功能特性、数据安全与技术栈说明
  */
-import { router, promptAction } from '@kit.ArkUI'
+import { router, promptAction, openUrl } from '@kit.ArkUI'
+import { privacyManager } from '@kit.AppGalleryKit'
 import { Theme } from '../common/Theme'
 
 
@@ -12,6 +13,23 @@ export struct AboutPage {
 
   private toast(msg: string): void {
     promptAction.showToast({ message: msg, duration: 2000 })
+  }
+
+  /** 通过 AGC 隐私管理服务打开托管隐私链接（与启动弹窗同源，保证展示一致） */
+  private openPrivacyUrl(type: string): void {
+    try {
+      const info: privacyManager.AppPrivacyMgmtInfo = privacyManager.getAppPrivacyMgmtInfo()
+      const links: privacyManager.AppPrivacyLink[] = info['privacyInfo']
+      for (let i = 0; i < links.length; i++) {
+        if (links[i]['type'] === type) {
+          openUrl(links[i]['url'])
+          return
+        }
+      }
+      this.toast('未获取到对应隐私链接')
+    } catch (e) {
+      this.toast('隐私链接获取失败，请稍后重试')
+    }
   }
 
   @Builder
@@ -143,6 +161,48 @@ export struct AboutPage {
               .padding(10)
               .backgroundColor(Theme.card())
               .borderRadius(10)
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+
+          Column({ space: 4 }) {
+            Text('隐私与协议')
+              .fontSize(13)
+              .fontColor(Theme.sub())
+              .padding({ left: 4, top: 10 })
+            Row() {
+              Text('隐私政策')
+                .fontSize(14)
+                .layoutWeight(1)
+              Text('›')
+                .fontSize(16)
+                .fontColor(Theme.divider())
+            }
+            .width('100%')
+            .height(44)
+            .padding({ left: 14, right: 14 })
+            .backgroundColor(Theme.card())
+            .borderRadius(10)
+            .onClick(() => {
+              this.openPrivacyUrl('PRIVACY_STATEMENT_LINK')
+            })
+            Row() {
+              Text('用户协议')
+                .fontSize(14)
+                .layoutWeight(1)
+              Text('›')
+                .fontSize(16)
+                .fontColor(Theme.divider())
+            }
+            .width('100%')
+            .height(44)
+            .padding({ left: 14, right: 14 })
+            .backgroundColor(Theme.card())
+            .borderRadius(10)
+            .margin({ top: 6 })
+            .onClick(() => {
+              this.openPrivacyUrl('USER_AGREEMENT_LINK')
+            })
           }
           .width('100%')
           .alignItems(HorizontalAlign.Start)
