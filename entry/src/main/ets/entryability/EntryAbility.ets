@@ -31,7 +31,7 @@ export default class EntryAbility extends UIAbility {
     try {
       const results: privacyManager.AppPrivacyResult[] = privacyManager.getAppPrivacyResult()
       for (let i = 0; i < results.length; i++) {
-        if (results[i]['result'] === 'FULL_MODE_AGREED') {
+        if (results[i]['result'] === privacyManager.AppPrivacyResultType.FULL_MODE_AGREED) {
           agreed = true
           break
         }
@@ -54,7 +54,7 @@ export default class EntryAbility extends UIAbility {
         .catch((err: BusinessError<Object>) => {
           hilog.error(0x0000, TAG, `privacy consent rejected: code=${err.code}, message=${err.message}`)
           // 用户拒绝隐私声明：按托管服务规范退出应用
-          this.terminateSelf()
+          this.context.terminateSelf()
         })
     } catch (e) {
       hilog.warn(0x0000, TAG, 'request privacy consent failed, bootstrap directly')

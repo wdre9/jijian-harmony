@@ -1,7 +1,10 @@
 /**
  * 关于页：版本信息、功能特性、数据安全与技术栈说明
  */
-import { router, promptAction, openUrl } from '@kit.ArkUI'
+import { router, promptAction } from '@kit.ArkUI'
+import { common } from '@kit.AbilityKit'
+import { BusinessError } from '@kit.BasicServicesKit'
+import { hilog } from '@kit.PerformanceAnalysisKit'
 import { privacyManager } from '@kit.AppGalleryKit'
 import { Theme } from '../common/Theme'
 
@@ -16,13 +19,18 @@ export struct AboutPage {
   }
 
   /** 通过 AGC 隐私管理服务打开托管隐私链接（与启动弹窗同源，保证展示一致） */
-  private openPrivacyUrl(type: string): void {
+  private openPrivacyUrl(type: privacyManager.AppPrivacyLinkType): void {
     try {
       const info: privacyManager.AppPrivacyMgmtInfo = privacyManager.getAppPrivacyMgmtInfo()
       const links: privacyManager.AppPrivacyLink[] = info['privacyInfo']
       for (let i = 0; i < links.length; i++) {
         if (links[i]['type'] === type) {
-          openUrl(links[i]['url'])
+          const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+          context.openLink(links[i]['url'], { appLinkingOnly: false })
+            .catch((err: BusinessError<Object>) => {
+              hilog.error(0x0000, 'AboutPage', `open privacy link failed: code=${err.code}, message=${err.message}`)
+              this.toast('打开链接失败，请稍后重试')
+            })
           return
         }
       }
@@ -184,7 +192,7 @@ export struct AboutPage {
             .backgroundColor(Theme.card())
             .borderRadius(10)
             .onClick(() => {
-              this.openPrivacyUrl('PRIVACY_STATEMENT_LINK')
+              this.openPrivacyUrl(privacyManager.AppPrivacyLinkType.PRIVACY_STATEMENT_LINK)
             })
             Row() {
               Text('用户协议')
@@ -201,7 +209,7 @@ export struct AboutPage {
             .borderRadius(10)
             .margin({ top: 6 })
             .onClick(() => {
-              this.openPrivacyUrl('USER_AGREEMENT_LINK')
+              this.openPrivacyUrl(privacyManager.AppPrivacyLinkType.USER_AGREEMENT_LINK)
             })
           }
           .width('100%')
