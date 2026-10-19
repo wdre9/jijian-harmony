@@ -1,8 +1,8 @@
-# 计件 · Jijian (HarmonyOS NEXT)
+# 计件通 · Jijian (HarmonyOS NEXT)
 
-计件工资记账助手 —— HarmonyOS NEXT 原生应用（ArkTS / ArkUI），本地优先、离线可用、数据不出本机。
+计件通（应用名）—— 计件工资记账助手，HarmonyOS NEXT 原生应用（ArkTS / ArkUI），本地优先、离线可用、数据不出本机。
 
-Jijian (Piece-Rate Wage Bookkeeping) — a native HarmonyOS NEXT app built with ArkTS / ArkUI. Local-first, fully offline, all data stays on-device.
+JijianTong (app name) — a piece-rate wage bookkeeping assistant as a native HarmonyOS NEXT app built with ArkTS / ArkUI. Local-first, fully offline, all data stays on-device.
 
 > 本工程为 [jijian-app](https://github.com/wdre9/jijian-app) 的鸿蒙原生重写版（Android 版功能对齐），与 Android 版 JSON 备份文件互相兼容（备份包 `app` 字段为 `jijian-pwa`）。
 > This repository is a native HarmonyOS rewrite of [jijian-app](https://github.com/wdre9/jijian-app) with feature parity; JSON backup files are interchangeable with the Android version (backup package `app` field is `jijian-pwa`).
@@ -28,12 +28,14 @@ Jijian targets piece-rate workshops: record daily output per product & process, 
 | 导出：CSV(带 BOM) / Excel(.xls) / JSON / 文本 / 统计长图 | Export: CSV(BOM) / Excel(.xls) / JSON / text / stats snapshot image |
 | 主题：浅色 / 深色 / 跟随系统 | Themes: light / dark / follow system |
 | 中英双文文档与自动化 CI 构建 | Bilingual docs & automated CI builds |
+| AGC 隐私托管合规：首次启动隐私确认、隐私政策/用户协议托管链接 | AGC hosted privacy compliance: first-launch consent, hosted privacy policy / user agreement links |
 
 ## 技术栈 · Tech Stack
 
 - 语言/框架：ArkTS + ArkUI，Stage 模型，DevEco Studio 26（API 26 / HarmonyOS NEXT 6.0.0）
 - 数据：`@ohos.data.relationalStore`（关系型数据库，单文档语义 + schemaVersion 迁移链）
 - 偏好：`@ohos.data.preferences`（主题/目标/默认工人等 UI 偏好）
+- 隐私合规：`@kit.AppGalleryKit`（AGC 隐私托管：requestAppPrivacyConsent / getAppPrivacyResult，协议链接托管于 AGC）
 - OCR：`@kit.CoreVisionKit`（textRecognition，本地识别）
 - 图片：`@ohos.file.picker`（PhotoViewPicker / documentViewPicker）、`@kit.ImageKit`
 - 图表：ArkUI `Canvas` 自绘 LineChart / BarChart / PieChart
@@ -50,15 +52,21 @@ Jijian targets piece-rate workshops: record daily output per product & process, 
    ohpm install --all
    hvigorw assembleHap --mode module -p product=default --no-daemon
    ```
-4. HAP 产物位于 `entry/build/default/outputs/default/*.hap`
+4. HAP 产物位于 `entry/build/default/outputs/default/*.hap`；构建上架用 App Pack（.app）：
+   ```bash
+   hvigorw assembleApp --mode project -p product=default -p buildMode=release --no-daemon
+   ```
+5. 正式分发请使用发布证书 + hap-sign-tool 离线签名（见下节 CI 说明）
 
 ## CI 构建说明 · CI Build
 
 `.github/workflows/build-harmony.yml` 在以下时机自动构建：
 
 - push 到 `main`
-- 推送 `v*` 标签（同时创建 GitHub Release 并上传 HAP）
+- 推送 `v*` 标签（同时创建 GitHub Release 并上传 App Pack）
 - 手动触发（workflow_dispatch）
+
+构建流程：DevEco Command Line Tools → `assembleApp --mode project -p buildMode=release` 产出 App Pack（.app）与 HAP，签名 Secrets 齐全时用官方 `hap-sign-tool.jar` 离线签名（hvigor 内置 SignHap 仅认 AES-GCM 密文密码，CI 不可用），产物上传 artifact `jijian-harmony-app`（含 `*.app` 与 `entry/build/**/*.hap`）。
 
 首次运行前，请在仓库 **Settings → Secrets and variables → Actions** 添加：
 
@@ -71,22 +79,23 @@ Jijian targets piece-rate workshops: record daily output per product & process, 
 | `HARMONY_CERT_BASE64` | 应用证书（.cer）的 Base64 |
 | `HARMONY_ALIAS` | 签名密钥别名 |
 
-签名 Secrets 未配置时，CI 会构建**未签名 HAP** 并在 Release 说明中标注，需本机用 DevEco Studio 或 `hap-sign-tool` 离线签名后安装。
+签名 Secrets 未配置时，CI 会构建**未签名产物**并在 Release 说明中标注，需本机用 DevEco Studio 或 `hap-sign-tool` 离线签名后安装/上架。
 
 ## 安装方式 · Installation
 
 - 真机：DevEco Studio 连接设备后 Run；或命令行 `hdc shell bm install -p xxx.hap`
 - 未签名 HAP：先用 DevEco Studio 配置签名（File → Project Structure → Signing Configs）或 `hap-sign-tool` 离线签名，再安装
-- 应用商店分发：请使用正式签名证书与 Profile 构建
+- 应用商店分发：使用正式签名证书与 Profile 构建 App Pack（.app）上传 AGC（华为应用市场）
 
 ## 数据安全 · Data Security
 
 - 所有数据仅保存在本机应用沙箱（RelationalStore 关系型数据库 + 沙箱文件），**不联网、不上传、不收集任何个人信息**
 - OCR 识别在设备端完成，图片不离开设备
+- 隐私合规走 AGC 隐私托管：首次启动展示托管隐私政策/用户协议，用户同意后才进入应用，拒绝即退出；已同意用户后续直接进入
 - 卸载应用前请先在「我的 → 数据与导出」导出 JSON 备份
 - 自动备份位于应用沙箱 `files/计件自动备份/`，滚动保留最近 14 份
 
-All data is stored only in the local app sandbox (RelationalStore + sandbox files). No network, no upload, no personal data collection. OCR runs fully on-device. Export a JSON backup before uninstalling.
+All data is stored only in the local app sandbox (RelationalStore + sandbox files). No network, no upload, no personal data collection. OCR runs fully on-device. Privacy consent is hosted via AGC (first-launch dialog with hosted policy/user agreement links; app exits on refusal). Export a JSON backup before uninstalling.
 
 ## 开源协议 · License
 

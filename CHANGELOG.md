@@ -1,6 +1,39 @@
 # 更新日志 · Changelog
 
-本文件记录「计件 · Jijian (HarmonyOS NEXT)」各版本的变更内容（中英双语）。
+本文件记录「计件通 · Jijian (HarmonyOS NEXT)」各版本的变更内容（中英双语）。
+
+## [0.1.1] - 2026-10-19
+
+### 新增 · Added
+
+- 集成 AGC 隐私托管（AppGallery Kit 隐私管理服务）：首次启动经 `requestAppPrivacyConsent` 展示托管隐私政策/用户协议，同意后进入应用；已同意用户经 `getAppPrivacyResult` 直接进入；不同意一律退出（`terminateSelf`）。
+  Integrated AGC hosted privacy consent (AppGallery Kit): first launch prompts via `requestAppPrivacyConsent` with hosted privacy policy / user agreement; already-consented users enter directly via `getAppPrivacyResult`; refusal always exits (`terminateSelf`).
+- 上架合规：隐私政策/用户协议托管链接配置于 AGC（agreementId=2063176678921788096），module.json5 声明 `appgallery_privacy_hosted` 元数据。
+  Store compliance: privacy policy / user agreement hosted on AGC (agreementId=2063176678921788096), `appgallery_privacy_hosted` metadata declared in module.json5.
+
+### 修复 · Fixed
+
+- 应用名称统一为「计件通」：AppScope 与 entry 三处 string.json（base / en_US）`app_name` 对齐，消除「提交名与终端显示名不一致」审核打回。
+  App name unified to "计件通": all three `app_name` entries in AppScope & entry string.json (base / en_US) aligned, resolving the review rejection caused by name mismatch between submission and on-device display.
+- 启动卡图标：EntryAbility 将 `loadContent` 与隐私确认解耦（onWindowStageCreate 立即加载），隐私流程加 5 秒超时兜底 + settled 互斥，杜绝启动窗口停留在图标导致「只显示一个图标」。
+  Startup stuck on icon: EntryAbility decouples `loadContent` from privacy consent (loaded immediately in onWindowStageCreate), adds a 5-second timeout fallback with a `settled` mutual-exclusion guard, fixing the "only icon shown" startup hang.
+- 隐私拒绝空结果误降级：拒绝返回空数组不再被吞成降级初始化，统一「未同意一律退出」。
+  Empty-result consent regression: empty `results` from a refusal no longer falls through to degraded init; any non-agreed outcome exits the app.
+- 主题递归闪退：`applyThemeToWindow` 按 `lastAppliedColorMode` 去重，切断 `setColorMode` 递归导致栈溢出闪退。
+  Theme recursion crash: `applyThemeToWindow` deduplicates via `lastAppliedColorMode`, breaking the `setColorMode` recursion that caused stack-overflow crashes.
+- 首页范围切换闪退：`homeRange` 改走 PrefStore 轻量存取并立即生效，消除切换瞬间退出/闪退。
+  Home range switch crash: `homeRange` now uses PrefStore with immediate effect, eliminating the exit/crash on switch.
+
+### 变更 · Changed
+
+- 图标更新为 1024×1024 full-bleed 无文字原创设计（app_icon / icon / startIcon 三入口同源一致）。
+  Icon updated to a full-bleed 1024×1024 text-free original design (app_icon / icon / startIcon all sourced identically).
+- 功能对齐 Android 版补强：次数模式、工序三态（启用/禁用/删除隔离）、工序快照、日均口径、导出范围、导出次数语义与件次取整。
+  Feature alignment with Android: count mode, process tri-state, process snapshots, daily-average semantics, export scope, export-count semantics and whole-unit rounding.
+- CI 升级为 App Pack 链路：`assembleApp --mode project -p buildMode=release` 产出 .app，签名改为官方 `hap-sign-tool.jar` 离线签名（规避 hvigor SignHap 的 AES-GCM 密文密码限制）。
+  CI upgraded to App Pack pipeline: `assembleApp --mode project -p buildMode=release` produces .app; signing switched to official `hap-sign-tool.jar` offline signing (bypassing hvigor SignHap's AES-GCM cipher-text password limitation).
+
+---
 
 ## [0.1.0] - 2026-10-10
 
@@ -56,6 +89,27 @@
 # English
 
 This file records changes for Jijian (HarmonyOS NEXT).
+
+## [0.1.1] - 2026-10-19
+
+### Added
+
+- AGC hosted privacy consent (AppGallery Kit): first launch prompts via `requestAppPrivacyConsent` with hosted privacy policy / user agreement; already-consented users enter directly via `getAppPrivacyResult`; refusal always exits (`terminateSelf`).
+- Store compliance: privacy policy / user agreement hosted on AGC (agreementId=2063176678921788096); `appgallery_privacy_hosted` metadata in module.json5.
+
+### Fixed
+
+- App name unified to "计件通": all three `app_name` entries (AppScope & entry string.json, base / en_US) aligned, resolving review rejection for name mismatch between submission and on-device display.
+- Startup stuck on icon: `loadContent` decoupled from privacy consent (loaded immediately in `onWindowStageCreate`), plus a 5-second timeout fallback with a `settled` mutual-exclusion guard.
+- Empty-result consent regression: empty `results` from a refusal no longer falls through to degraded init; any non-agreed outcome exits the app.
+- Theme recursion crash: `applyThemeToWindow` deduplicates via `lastAppliedColorMode`, breaking the `setColorMode` recursion that caused stack-overflow crashes.
+- Home range switch crash: `homeRange` now uses PrefStore with immediate effect.
+
+### Changed
+
+- Icon updated to a full-bleed 1024×1024 text-free original design (app_icon / icon / startIcon all sourced identically).
+- Feature alignment with Android: count mode, process tri-state, process snapshots, daily-average semantics, export scope, export-count semantics and whole-unit rounding.
+- CI upgraded to App Pack pipeline: `assembleApp --mode project -p buildMode=release` produces .app; signing switched to official `hap-sign-tool.jar` offline signing.
 
 ## [0.1.0] - 2026-10-10
 
