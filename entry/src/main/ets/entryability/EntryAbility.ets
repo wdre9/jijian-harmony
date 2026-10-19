@@ -116,14 +116,10 @@ export default class EntryAbility extends UIAbility {
     try {
       privacyManager.requestAppPrivacyConsent(this.context)
         .then((consentResult: privacyManager.ConsentResult) => {
-          // resolve：按 results 复查签署结果（官方推荐），区分“同意”与“拒绝”
+          // resolve：按 results 复查签署结果（官方推荐），区分“同意”与“拒绝”。
+          // 拒绝可能表现为空数组（未签署无记录）或非 FULL_MODE_AGREED 条目，
+          // 两种形态处理一致：未同意一律退出，绝不初始化（行业规则“拒绝即退出”）。
           const results: privacyManager.AppPrivacyResult[] = consentResult['results']
-          if (results.length === 0) {
-            // 异常空结果：不误判为拒绝，降级继续
-            hilog.warn(0x0000, TAG, 'privacy consent result empty, fallback to init directly')
-            finish('empty-result')
-            return
-          }
           if (this.isAgreed(results)) {
             finish('agreed')
           } else {
@@ -132,7 +128,7 @@ export default class EntryAbility extends UIAbility {
               clearTimeout(timer)
             }
             hilog.warn(0x0000, TAG, 'privacy consent rejected by user')
-            // 用户拒绝：按托管服务规范退出，不再初始化业务
+            // 用户拒绝（含空结果）：按托管服务规范退出，不再初始化业务
             this.context.terminateSelf()
           }
         })
