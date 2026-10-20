@@ -4,7 +4,7 @@
  */
 import { componentSnapshot, promptAction } from '@kit.ArkUI'
 import { image } from '@kit.ImageKit'
-import { picker as documentViewPicker, fileIo as fs, fileUri } from '@kit.CoreFileKit'
+import { picker as documentViewPicker, fileIo as fs } from '@kit.CoreFileKit'
 import { BusinessError } from '@kit.BasicServicesKit'
 import { BestDayInfo, DataDoc, RankItem, ShareItem, TrendPoint } from '../model/Types'
 import { AppStore } from '../store/AppStore'
@@ -259,10 +259,14 @@ export struct StatsPage {
         fs.closeSync(file)
         packer.release()
         data.release()
-        const srcFileUri: string = fileUri.getUriFromPath(sandboxPath)
         const documentPicker = new documentViewPicker.DocumentViewPicker(ctx)
-        const saveResult: Array<string> = await documentPicker.save([srcFileUri])
-        if (saveResult && saveResult.length > 0) {
+        const saveOptions = new documentViewPicker.DocumentSaveOptions()
+        saveOptions.newFileNames = [fileName]
+        const savedUris: Array<string> = await documentPicker.save(saveOptions)
+        if (savedUris && savedUris.length > 0) {
+          const dest = fs.openSync(savedUris[0], fs.OpenMode.READ_WRITE | fs.OpenMode.TRUNC)
+          fs.writeSync(dest.fd, buf)
+          fs.closeSync(dest)
           this.toast('统计长图已保存')
         } else {
           this.toast('已取消保存')
