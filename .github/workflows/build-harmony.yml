@@ -89,9 +89,11 @@ jobs:
           HAP_SIGN_TOOL="$COMMANDLINE_TOOL_DIR/sdk/default/openharmony/toolchains/lib/hap-sign-tool.jar"
           ls -l "$HAP_SIGN_TOOL"
           find . -name '*.hap' -o -name '*.app' | sort
-          # 签名未签名 HAP（云调试/真机安装用）
-          for UNSIGNED_HAP in $(find entry/build -name '*.hap' ! -name '*-signed.hap'); do
-            SIGNED_HAP="${UNSIGNED_HAP%.hap}-signed.hap"
+          # 签名未签名 HAP（云调试/真机安装用）。注意：hvigor 26 未签名产物命名自带 -unsigned-signed 后缀，
+          # 不能用 ! -name '*-signed.hap' 排除（会误跳过全部），改为排除整包 app/ 目录内的 hap。
+          for UNSIGNED_HAP in $(find entry/build -name '*.hap' ! -path '*/app/*'); do
+            DIR=$(dirname "$UNSIGNED_HAP")
+            SIGNED_HAP="$DIR/jijian-harmony-release-signed.hap"
             java -jar "$HAP_SIGN_TOOL" sign-app \
               -keyAlias "$HARMONY_ALIAS" \
               -signAlg "SHA256withECDSA" \
@@ -105,9 +107,10 @@ jobs:
               -keystorePwd "$HARMONY_P12_PASSWORD"
             rm -f "$UNSIGNED_HAP"
           done
-          # 签名未签名 App Pack（AGC 上架用）
-          for UNSIGNED_APP in $(find . -name '*.app' ! -name '*-signed.app'); do
-            SIGNED_APP="${UNSIGNED_APP%.app}-signed.app"
+          # 签名未签名 App Pack（AGC 上架用）。同样直接按路径签 build/ 下的 .app。
+          for UNSIGNED_APP in $(find build -name '*.app'); do
+            DIR=$(dirname "$UNSIGNED_APP")
+            SIGNED_APP="$DIR/jijian-harmony-release-signed.app"
             java -jar "$HAP_SIGN_TOOL" sign-app \
               -keyAlias "$HARMONY_ALIAS" \
               -signAlg "SHA256withECDSA" \
