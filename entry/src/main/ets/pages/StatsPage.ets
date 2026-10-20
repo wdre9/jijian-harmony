@@ -4,7 +4,6 @@
  */
 import { componentSnapshot, promptAction } from '@kit.ArkUI'
 import { image } from '@kit.ImageKit'
-import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { picker as documentViewPicker, fileIo as fs, fileUri } from '@kit.CoreFileKit'
 import { BusinessError } from '@kit.BasicServicesKit'
 import { BestDayInfo, DataDoc, RankItem, ShareItem, TrendPoint } from '../model/Types'
@@ -241,7 +240,7 @@ export struct StatsPage {
     }
   }
 
-  /** 截图统计区域并写入沙箱，经 showAssetsCreationDialog 由用户确认导入相册（无需任何媒体权限） */
+  /** 截图统计区域并写入沙箱，经 documentViewPicker 弹系统保存框由用户确认保存（无需任何媒体权限） */
   private async saveSnapshot(): Promise<void> {
     componentSnapshot.get('statsArea', async (err: BusinessError, data: image.PixelMap) => {
       if (err) {
@@ -261,10 +260,15 @@ export struct StatsPage {
         packer.release()
         data.release()
         const srcFileUri: string = fileUri.getUriFromPath(sandboxPath)
-        await photoAccessHelper.showAssetsCreationDialog({ srcFileUris: [srcFileUri] })
-        this.toast('统计长图已保存到相册')
+        const documentPicker = new documentViewPicker.DocumentViewPicker(ctx)
+        const saveResult: Array<string> = await documentPicker.save([srcFileUri])
+        if (saveResult && saveResult.length > 0) {
+          this.toast('统计长图已保存')
+        } else {
+          this.toast('已取消保存')
+        }
       } catch (e) {
-        this.toast('保存失败，请检查相册权限')
+        this.toast('保存失败，请检查文件权限')
       }
     })
   }
