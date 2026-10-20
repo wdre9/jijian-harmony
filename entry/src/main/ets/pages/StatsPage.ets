@@ -4,7 +4,7 @@
  */
 import { componentSnapshot, promptAction } from '@kit.ArkUI'
 import { image } from '@kit.ImageKit'
-import photoAccessHelper from '@ohos.file.photoAccessHelper'
+import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { picker as documentViewPicker, fileIo as fs, fileUri } from '@kit.CoreFileKit'
 import { BusinessError } from '@kit.BasicServicesKit'
 import { BestDayInfo, DataDoc, RankItem, ShareItem, TrendPoint } from '../model/Types'
