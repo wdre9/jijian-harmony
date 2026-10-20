@@ -9,14 +9,132 @@ import { sumAmount, enrichRecords, EnrichedRecord } from '../utils/StatsUtils'
 import { Theme } from '../common/Theme'
 
 
+@CustomDialog
+struct ProductSheetDialog {
+  controller?: CustomDialogController
+  @Link pName: string
+  @Link pSpec: string
+  @Link pNote: string
+  onSave: () => void = () => {
+  }
+
+  build() {
+    Column({ space: 10 }) {
+      Text('新增产品')
+        .fontSize(16)
+        .fontWeight(FontWeight.Medium)
+        .padding({ top: 16 })
+      TextInput({ text: this.pName, placeholder: '产品名称（如 法兰盘）' })
+        .width('100%')
+        .height(40)
+        .onChange((v: string) => {
+          this.pName = v
+        })
+      TextInput({ text: this.pSpec, placeholder: '规格（选填，如 φ100）' })
+        .width('100%')
+        .height(40)
+        .onChange((v: string) => {
+          this.pSpec = v
+        })
+      TextInput({ text: this.pNote, placeholder: '备注（选填）' })
+        .width('100%')
+        .height(40)
+        .onChange((v: string) => {
+          this.pNote = v
+        })
+      Button('保存')
+        .width('100%')
+        .height(40)
+        .backgroundColor(Theme.blue())
+        .onClick(() => {
+          this.onSave()
+        })
+      Blank().height(20)
+    }
+    .width('100%')
+    .height('100%')
+    .padding(14)
+    .backgroundColor(Theme.card())
+  }
+}
+
+@CustomDialog
+struct ProcessSheetDialog {
+  controller?: CustomDialogController
+  @Link cName: string
+  @Link cPrice: string
+  @Link cNote: string
+  @Link cProductId: string
+  title: string = '新增工序'
+  products: Product[] = []
+  onSave: () => void = () => {
+  }
+
+  build() {
+    Column({ space: 10 }) {
+      Text(this.title)
+        .fontSize(16)
+        .fontWeight(FontWeight.Medium)
+        .padding({ top: 16 })
+      Scroll() {
+        Row({ space: 8 }) {
+          ForEach(this.products, (p: Product) => {
+            Text(p.name)
+              .fontSize(12)
+              .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+              .backgroundColor(this.cProductId === p.id ? Theme.blue() : Theme.chip())
+              .fontColor(this.cProductId === p.id ? Theme.card() : Theme.text())
+              .borderRadius(12)
+              .onClick(() => {
+                this.cProductId = p.id
+              })
+          }, (p: Product) => p.id)
+        }
+      }
+      .scrollable(ScrollDirection.Horizontal)
+      .scrollBar(BarState.Off)
+      .width('100%')
+      TextInput({ text: this.cName, placeholder: '工序名称（如 车外圆）' })
+        .width('100%')
+        .height(40)
+        .onChange((v: string) => {
+          this.cName = v
+        })
+      TextInput({ text: this.cPrice, placeholder: '单价（元）' })
+        .width('100%')
+        .height(40)
+        .onChange((v: string) => {
+          this.cPrice = v
+        })
+      TextInput({ text: this.cNote, placeholder: '备注（选填）' })
+        .width('100%')
+        .height(40)
+        .onChange((v: string) => {
+          this.cNote = v
+        })
+      Button('保存')
+        .width('100%')
+        .height(40)
+        .backgroundColor(Theme.blue())
+        .onClick(() => {
+          this.onSave()
+        })
+      Blank().height(20)
+    }
+    .width('100%')
+    .height('100%')
+    .padding(14)
+    .backgroundColor(Theme.card())
+  }
+}
+
+
 @Entry
 @Component
 export struct ProductProcessPage {
   @State doc: DataDoc = AppStore.getInstance().doc
   @State tab: string = 'product'
   @State filterProductId: string = ''
-  @State showProductSheet: boolean = false
-  @State showProcessSheet: boolean = false
   @State editingProcess: Process | null = null
   // 表单
   @State pName: string = ''
@@ -26,6 +144,24 @@ export struct ProductProcessPage {
   @State cPrice: string = ''
   @State cProductId: string = ''
   @State cNote: string = ''
+  private productDialogCtrl: CustomDialogController = new CustomDialogController({
+    builder: ProductSheetDialog({
+      pName: $pName, pSpec: $pSpec, pNote: $pNote,
+      onSave: () => { this.doAddProduct() }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center
+  })
+  private processDialogCtrl: CustomDialogController = new CustomDialogController({
+    builder: ProcessSheetDialog({
+      cName: $cName, cPrice: $cPrice, cNote: $cNote, cProductId: $cProductId,
+      title: '新增工序',
+      products: this.doc.products,
+      onSave: () => { this.doSaveProcess() }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center
+  })
   private store: AppStore = AppStore.getInstance()
 
   private productOf(id: string): Product | undefined {
@@ -68,7 +204,15 @@ export struct ProductProcessPage {
     this.pName = ''
     this.pSpec = ''
     this.pNote = ''
-    this.showProductSheet = true
+    this.productDialogCtrl = new CustomDialogController({
+      builder: ProductSheetDialog({
+        pName: $pName, pSpec: $pSpec, pNote: $pNote,
+        onSave: () => { this.doAddProduct() }
+      }),
+      autoCancel: true,
+      alignment: DialogAlignment.Center
+    })
+    this.productDialogCtrl.open()
   }
 
   private async doAddProduct(): Promise<void> {
@@ -77,7 +221,7 @@ export struct ProductProcessPage {
       return
     }
     this.doc = await this.store.addProduct(this.pName.trim(), this.pSpec.trim(), this.pNote.trim())
-    this.showProductSheet = false
+    this.productDialogCtrl.close()
     this.toast('已添加产品')
   }
 
@@ -102,7 +246,17 @@ export struct ProductProcessPage {
     this.cNote = ''
     this.cProductId = this.filterProductId || (this.doc.products.length > 0 ? this.doc.products[0].id : '')
     this.editingProcess = null
-    this.showProcessSheet = true
+    this.processDialogCtrl = new CustomDialogController({
+      builder: ProcessSheetDialog({
+        cName: $cName, cPrice: $cPrice, cNote: $cNote, cProductId: $cProductId,
+        title: '新增工序',
+        products: this.doc.products,
+        onSave: () => { this.doSaveProcess() }
+      }),
+      autoCancel: true,
+      alignment: DialogAlignment.Center
+    })
+    this.processDialogCtrl.open()
   }
 
   private openEditProcess(c: Process): void {
@@ -111,7 +265,17 @@ export struct ProductProcessPage {
     this.cNote = c.note
     this.cProductId = c.productId
     this.editingProcess = c
-    this.showProcessSheet = true
+    this.processDialogCtrl = new CustomDialogController({
+      builder: ProcessSheetDialog({
+        cName: $cName, cPrice: $cPrice, cNote: $cNote, cProductId: $cProductId,
+        title: '编辑工序',
+        products: this.doc.products,
+        onSave: () => { this.doSaveProcess() }
+      }),
+      autoCancel: true,
+      alignment: DialogAlignment.Center
+    })
+    this.processDialogCtrl.open()
   }
 
   private async doSaveProcess(): Promise<void> {
@@ -147,7 +311,7 @@ export struct ProductProcessPage {
       this.doc = await this.store.addProcess(this.cProductId, this.cName.trim(), price, this.cNote.trim())
       this.toast('已添加工序')
     }
-    this.showProcessSheet = false
+    this.processDialogCtrl.close()
   }
 
   private async doDeleteProcess(c: Process): Promise<void> {
@@ -178,104 +342,6 @@ export struct ProductProcessPage {
       updatedAt: Date.now()
     }
     this.doc = await this.store.updateProcess(updated)
-  }
-
-  @Builder
-  productSheet() {
-    Column({ space: 10 }) {
-      Text('新增产品')
-        .fontSize(16)
-        .fontWeight(FontWeight.Medium)
-        .padding({ top: 16 })
-      TextInput({ text: this.pName, placeholder: '产品名称（如 法兰盘）' })
-        .width('100%')
-        .height(40)
-        .onChange((v: string) => {
-          this.pName = v
-        })
-      TextInput({ text: this.pSpec, placeholder: '规格（选填，如 φ100）' })
-        .width('100%')
-        .height(40)
-        .onChange((v: string) => {
-          this.pSpec = v
-        })
-      TextInput({ text: this.pNote, placeholder: '备注（选填）' })
-        .width('100%')
-        .height(40)
-        .onChange((v: string) => {
-          this.pNote = v
-        })
-      Button('保存')
-        .width('100%')
-        .height(40)
-        .backgroundColor(Theme.blue())
-        .onClick(() => {
-          this.doAddProduct()
-        })
-      Blank().height(20)
-    }
-    .width('100%')
-    .height('100%')
-    .padding(14)
-    .backgroundColor(Theme.card())
-  }
-
-  @Builder
-  processSheet() {
-    Column({ space: 10 }) {
-      Text(this.editingProcess ? '编辑工序' : '新增工序')
-        .fontSize(16)
-        .fontWeight(FontWeight.Medium)
-        .padding({ top: 16 })
-      Scroll() {
-        Row({ space: 8 }) {
-          ForEach(this.doc.products, (p: Product) => {
-            Text(p.name)
-              .fontSize(12)
-              .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-              .backgroundColor(this.cProductId === p.id ? Theme.blue() : Theme.chip())
-              .fontColor(this.cProductId === p.id ? Theme.card() : Theme.text())
-              .borderRadius(12)
-              .onClick(() => {
-                this.cProductId = p.id
-              })
-          }, (p: Product) => p.id)
-        }
-      }
-      .scrollable(ScrollDirection.Horizontal)
-      .scrollBar(BarState.Off)
-      .width('100%')
-      TextInput({ text: this.cName, placeholder: '工序名称（如 车外圆）' })
-        .width('100%')
-        .height(40)
-        .onChange((v: string) => {
-          this.cName = v
-        })
-      TextInput({ text: this.cPrice, placeholder: '单价（元）' })
-        .width('100%')
-        .height(40)
-        .onChange((v: string) => {
-          this.cPrice = v
-        })
-      TextInput({ text: this.cNote, placeholder: '备注（选填）' })
-        .width('100%')
-        .height(40)
-        .onChange((v: string) => {
-          this.cNote = v
-        })
-      Button('保存')
-        .width('100%')
-        .height(40)
-        .backgroundColor(Theme.blue())
-        .onClick(() => {
-          this.doSaveProcess()
-        })
-      Blank().height(20)
-    }
-    .width('100%')
-    .height('100%')
-    .padding(14)
-    .backgroundColor(Theme.card())
   }
 
   @Builder
@@ -499,7 +565,5 @@ export struct ProductProcessPage {
     .width('100%')
     .height('100%')
     .backgroundColor(Theme.bg())
-    .bindSheet(this.showProductSheet, this.productSheet(), { height: 360 })
-    .bindSheet(this.showProcessSheet, this.processSheet(), { height: 460 })
   }
 }

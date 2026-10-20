@@ -5,7 +5,7 @@
 import { componentSnapshot, promptAction } from '@kit.ArkUI'
 import { image } from '@kit.ImageKit'
 import photoAccessHelper from '@ohos.file.photoAccessHelper'
-import { picker as documentViewPicker, fileIo as fs } from '@kit.CoreFileKit'
+import { picker as documentViewPicker, fileIo as fs, fileUri } from '@kit.CoreFileKit'
 import { BusinessError } from '@kit.BasicServicesKit'
 import { BestDayInfo, DataDoc, RankItem, ShareItem, TrendPoint } from '../model/Types'
 import { AppStore } from '../store/AppStore'
@@ -241,7 +241,7 @@ export struct StatsPage {
     }
   }
 
-  /** 截图统计区域并保存到相册（SaveButton 安全控件授权后触发，无需 WRITE_IMAGEVIDEO 权限） */
+  /** 截图统计区域并写入沙箱，经 showAssetsCreationDialog 由用户确认导入相册（无需任何媒体权限） */
   private async saveSnapshot(): Promise<void> {
     componentSnapshot.get('statsArea', async (err: BusinessError, data: image.PixelMap) => {
       if (err) {
@@ -252,14 +252,16 @@ export struct StatsPage {
         const packer = image.createImagePacker()
         const opt: image.PackingOption = { format: 'image/png', quality: 100 }
         const buf: ArrayBuffer = await packer.packToData(data, opt)
-        const phAccess = photoAccessHelper.getPhotoAccessHelper(getContext(this))
-        const fileName: string = `计件统计-${todayStr()}.png`
-        const uri: string = await phAccess.createAsset(photoAccessHelper.PhotoType.IMAGE, fileName, { title: fileName })
-        const file = fs.openSync(uri, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE)
+        const ctx = getContext(this)
+        const fileName: string = `stats_${Date.now()}.png`
+        const sandboxPath: string = `${ctx.filesDir}/${fileName}`
+        const file = fs.openSync(sandboxPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE)
         fs.writeSync(file.fd, buf)
         fs.closeSync(file)
         packer.release()
         data.release()
+        const srcFileUri: string = fileUri.getUriFromPath(sandboxPath)
+        await photoAccessHelper.showAssetsCreationDialog({ srcFileUris: [srcFileUri] })
         this.toast('统计长图已保存到相册')
       } catch (e) {
         this.toast('保存失败，请检查相册权限')
@@ -492,16 +494,14 @@ export struct StatsPage {
             this.showExportSheet = true
           })
         Text('  ')
-        SaveButton({ buttonType: ButtonType.Normal, text: SaveDescription.DOWNLOAD })
+        Button('下载')
           .fontSize(14)
           .fontColor(Theme.blue())
           .backgroundColor(Theme.card())
           .borderRadius(0)
           .height(48)
-          .onClick((event: ClickEvent, result: SaveButtonOnClickResult) => {
-            if (result === SaveButtonOnClickResult.SUCCESS) {
-              this.saveSnapshot()
-            }
+          .onClick(() => {
+            this.saveSnapshot()
           })
       }
       .width('100%')

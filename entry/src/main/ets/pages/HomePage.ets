@@ -132,8 +132,8 @@ export struct HomePage {
   }
 
   private goRecordEdit(): void {
-    // 完整记账走独立页；快捷记账走弹层
-    this.openQuick()
+    // 记一笔：跳转独立记账页（新增态，不传 id）；快捷弹层逻辑保留给其他入口
+    router.pushUrl({ url: 'pages/RecordEditPage' })
   }
 
   private goDetail(): void {

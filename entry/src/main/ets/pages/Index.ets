@@ -22,6 +22,12 @@ struct Index {
     this.checkReady()
   }
 
+  onPageShow(): void {
+    if (this.store.ready) {
+      this.doc = this.store.snapshot()
+    }
+  }
+
   /** 等待数据层初始化完成 */
   private checkReady(): void {
     if (this.store.ready) {
