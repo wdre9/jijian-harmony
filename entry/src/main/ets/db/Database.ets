@@ -129,7 +129,8 @@ export class DataStore {
         doc.savedAt = Number(sa)
       }
     } catch (e) {
-      // 读取失败按空文档处理，避免白屏
+      // 读取失败按空文档处理，避免白屏；记录错误便于定位，不再静默吞掉
+      console.error('[DataStore] loadDoc failed, fallback to empty doc:', e)
       return emptyDoc()
     }
     return migrateDoc(doc)

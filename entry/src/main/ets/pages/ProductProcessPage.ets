@@ -51,10 +51,10 @@ struct ProductSheetDialog {
         })
       Blank().height(20)
     }
-    .width('100%')
-    .height('100%')
+    .width('92%')
     .padding(14)
     .backgroundColor(Theme.card())
+    .borderRadius(16)
   }
 }
 
@@ -66,7 +66,7 @@ struct ProcessSheetDialog {
   @Link cNote: string
   @Link cProductId: string
   title: string = '新增工序'
-  products: Product[] = []
+  @Link products: Product[]
   onSave: () => void = () => {
   }
 
@@ -121,10 +121,10 @@ struct ProcessSheetDialog {
         })
       Blank().height(20)
     }
-    .width('100%')
-    .height('100%')
+    .width('92%')
     .padding(14)
     .backgroundColor(Theme.card())
+    .borderRadius(16)
   }
 }
 
@@ -144,22 +144,26 @@ export struct ProductProcessPage {
   @State cPrice: string = ''
   @State cProductId: string = ''
   @State cNote: string = ''
+  /** 工序弹窗产品快照（状态驱动，打开时刷新，避免复用 controller 后产品列表陈旧） */
+  @State sheetProducts: Product[] = []
   private productDialogCtrl: CustomDialogController = new CustomDialogController({
     builder: ProductSheetDialog({
       pName: $pName, pSpec: $pSpec, pNote: $pNote,
       onSave: () => { this.doAddProduct() }
     }),
     autoCancel: true,
+    customStyle: true,
     alignment: DialogAlignment.Center
   })
   private processDialogCtrl: CustomDialogController = new CustomDialogController({
     builder: ProcessSheetDialog({
       cName: $cName, cPrice: $cPrice, cNote: $cNote, cProductId: $cProductId,
       title: '新增工序',
-      products: this.doc.products,
+      products: $sheetProducts,
       onSave: () => { this.doSaveProcess() }
     }),
     autoCancel: true,
+    customStyle: true,
     alignment: DialogAlignment.Center
   })
   private store: AppStore = AppStore.getInstance()
@@ -204,14 +208,6 @@ export struct ProductProcessPage {
     this.pName = ''
     this.pSpec = ''
     this.pNote = ''
-    this.productDialogCtrl = new CustomDialogController({
-      builder: ProductSheetDialog({
-        pName: $pName, pSpec: $pSpec, pNote: $pNote,
-        onSave: () => { this.doAddProduct() }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Center
-    })
     this.productDialogCtrl.open()
   }
 
@@ -220,9 +216,13 @@ export struct ProductProcessPage {
       this.toast('请输入产品名称')
       return
     }
-    this.doc = await this.store.addProduct(this.pName.trim(), this.pSpec.trim(), this.pNote.trim())
-    this.productDialogCtrl.close()
-    this.toast('已添加产品')
+    try {
+      this.doc = await this.store.addProduct(this.pName.trim(), this.pSpec.trim(), this.pNote.trim())
+      this.productDialogCtrl.close()
+      this.toast('已添加产品')
+    } catch (e) {
+      this.toast('添加失败，请重试')
+    }
   }
 
   private async doDeleteProduct(p: Product): Promise<void> {
@@ -246,16 +246,7 @@ export struct ProductProcessPage {
     this.cNote = ''
     this.cProductId = this.filterProductId || (this.doc.products.length > 0 ? this.doc.products[0].id : '')
     this.editingProcess = null
-    this.processDialogCtrl = new CustomDialogController({
-      builder: ProcessSheetDialog({
-        cName: $cName, cPrice: $cPrice, cNote: $cNote, cProductId: $cProductId,
-        title: '新增工序',
-        products: this.doc.products,
-        onSave: () => { this.doSaveProcess() }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Center
-    })
+    this.sheetProducts = this.doc.products.slice()
     this.processDialogCtrl.open()
   }
 
@@ -265,16 +256,7 @@ export struct ProductProcessPage {
     this.cNote = c.note
     this.cProductId = c.productId
     this.editingProcess = c
-    this.processDialogCtrl = new CustomDialogController({
-      builder: ProcessSheetDialog({
-        cName: $cName, cPrice: $cPrice, cNote: $cNote, cProductId: $cProductId,
-        title: '编辑工序',
-        products: this.doc.products,
-        onSave: () => { this.doSaveProcess() }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Center
-    })
+    this.sheetProducts = this.doc.products.slice()
     this.processDialogCtrl.open()
   }
 
@@ -305,27 +287,41 @@ export struct ProductProcessPage {
         createdAt: c.createdAt,
         updatedAt: Date.now()
       }
-      this.doc = await this.store.updateProcess(updated)
-      this.toast('已保存')
+      try {
+        this.doc = await this.store.updateProcess(updated)
+        this.toast('已保存')
+      } catch (e) {
+        this.toast('保存失败，请重试')
+        return
+      }
     } else {
-      this.doc = await this.store.addProcess(this.cProductId, this.cName.trim(), price, this.cNote.trim())
-      this.toast('已添加工序')
+      try {
+        this.doc = await this.store.addProcess(this.cProductId, this.cName.trim(), price, this.cNote.trim())
+        this.toast('已添加工序')
+      } catch (e) {
+        this.toast('保存失败，请重试')
+        return
+      }
     }
     this.processDialogCtrl.close()
   }
 
   private async doDeleteProcess(c: Process): Promise<void> {
-    const res = await promptAction.showDialog({
-      title: '删除工序',
-      message: `确定删除工序「${c.name}」？历史记录保留。`,
-      buttons: [
-        { text: '取消', color: Theme.sub() },
-        { text: '删除', color: Theme.red() }
-      ]
-    })
-    if (res.index === 1) {
-      this.doc = await this.store.deleteProcess(c.id)
-      this.toast('已删除')
+    try {
+      const res = await promptAction.showDialog({
+        title: '删除工序',
+        message: `确定删除工序「${c.name}」？历史记录保留。`,
+        buttons: [
+          { text: '取消', color: Theme.sub() },
+          { text: '删除', color: Theme.red() }
+        ]
+      })
+      if (res.index === 1) {
+        this.doc = await this.store.deleteProcess(c.id)
+        this.toast('已删除')
+      }
+    } catch (e) {
+      this.toast('删除失败，请重试')
     }
   }
 
@@ -341,7 +337,11 @@ export struct ProductProcessPage {
       createdAt: c.createdAt,
       updatedAt: Date.now()
     }
-    this.doc = await this.store.updateProcess(updated)
+    try {
+      this.doc = await this.store.updateProcess(updated)
+    } catch (e) {
+      this.toast('操作失败，请重试')
+    }
   }
 
   @Builder

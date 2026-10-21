@@ -195,7 +195,11 @@ export class AppStore {
       updatedAt: now
     }
     this.doc.products.push(p)
-    await this.persist()
+    try {
+      await this.persist()
+    } catch (e) {
+      // 内存先行：落库失败不阻断，下次成功保存会覆盖
+    }
     return this.snapshot()
   }
 
@@ -205,7 +209,11 @@ export class AppStore {
         this.doc.products[i] = p
       }
     }
-    await this.persist()
+    try {
+      await this.persist()
+    } catch (e) {
+      // 内存先行：落库失败不阻断
+    }
     return this.snapshot()
   }
 
@@ -232,7 +240,11 @@ export class AppStore {
       }
     }
     this.doc.records = records
-    await this.persist()
+    try {
+      await this.persist()
+    } catch (e) {
+      // 内存先行：落库失败不阻断
+    }
     return this.snapshot()
   }
 
@@ -253,7 +265,11 @@ export class AppStore {
       updatedAt: now
     }
     this.doc.processes.push(c)
-    await this.persist()
+    try {
+      await this.persist()
+    } catch (e) {
+      // 内存先行：落库失败不阻断
+    }
     return this.snapshot()
   }
 
@@ -263,7 +279,11 @@ export class AppStore {
         this.doc.processes[i] = c
       }
     }
-    await this.persist()
+    try {
+      await this.persist()
+    } catch (e) {
+      // 内存先行：落库失败不阻断
+    }
     return this.snapshot()
   }
 
@@ -275,7 +295,11 @@ export class AppStore {
       }
     }
     this.doc.processes = processes
-    await this.persist()
+    try {
+      await this.persist()
+    } catch (e) {
+      // 内存先行：落库失败不阻断
+    }
     return this.snapshot()
   }
 

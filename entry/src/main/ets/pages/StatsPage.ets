@@ -710,11 +710,11 @@ export struct StatsPage {
       .width('100%')
       .height('100%')
       .backgroundColor(Theme.bg())
-      .bindSheet(this.showExportSheet, this.exportSheet(), { height: 300 })
     }
     .width('100%')
     .height('100%')
     .id('statsArea')
+    .bindSheet(this.showExportSheet, this.exportSheet(), { height: 300 })
   }
 }
 

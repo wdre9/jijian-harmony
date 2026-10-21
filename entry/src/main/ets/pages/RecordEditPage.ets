@@ -254,31 +254,45 @@ struct RecordEditPage {
         .fontSize(16)
         .fontWeight(FontWeight.Medium)
         .padding({ top: 16, bottom: 8 })
-      List({ space: 4 }) {
-        ForEach(this.products(), (p: Product) => {
-          ListItem() {
-            Row({ space: 10 }) {
-              Text(p.name)
-                .fontSize(15)
-                .layoutWeight(1)
-              if (p.spec) {
-                Text(p.spec)
-                  .fontSize(12)
-                  .fontColor(Theme.sub())
+      if (this.products().length === 0) {
+        Column({ space: 8 }) {
+          Text('暂无产品，请先新增')
+            .fontSize(15)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(Theme.text())
+          Text('返回「产品与工序」页新增产品后，再来记一笔')
+            .fontSize(12)
+            .fontColor(Theme.sub())
+        }
+        .width('100%')
+        .padding({ top: 48, bottom: 48 })
+      } else {
+        List({ space: 4 }) {
+          ForEach(this.products(), (p: Product) => {
+            ListItem() {
+              Row({ space: 10 }) {
+                Text(p.name)
+                  .fontSize(15)
+                  .layoutWeight(1)
+                if (p.spec) {
+                  Text(p.spec)
+                    .fontSize(12)
+                    .fontColor(Theme.sub())
+                }
               }
+              .width('100%')
+              .padding(12)
+              .backgroundColor(this.productId === p.id ? Theme.weakBlue() : Theme.card())
+              .borderRadius(8)
+              .onClick(() => {
+                this.selectProduct(p)
+              })
             }
-            .width('100%')
-            .padding(12)
-            .backgroundColor(this.productId === p.id ? Theme.weakBlue() : Theme.card())
-            .borderRadius(8)
-            .onClick(() => {
-              this.selectProduct(p)
-            })
-          }
-        }, (p: Product) => p.id)
+          }, (p: Product) => p.id)
+        }
+        .width('100%')
+        .layoutWeight(1)
       }
-      .width('100%')
-      .layoutWeight(1)
     }
     .width('100%')
     .height('100%')
@@ -351,7 +365,6 @@ struct RecordEditPage {
           .onClick(() => {
             this.showProductSheet = true
           })
-          .bindSheet(this.showProductSheet, this.productSheet(), { height: 420 })
 
           // 工序（三态：已有 / 手动输入 / 不填未分类）
           Column({ space: 8 }) {
@@ -418,7 +431,6 @@ struct RecordEditPage {
                 }
                 this.showProcessSheet = true
               })
-              .bindSheet(this.showProcessSheet, this.processSheet(), { height: 420 })
             } else if (this.processMode === 'custom') {
               TextInput({ text: this.customProcessName, placeholder: '输入自定义工序名' })
                 .width('100%')
@@ -700,5 +712,7 @@ struct RecordEditPage {
     }
     .width('100%')
     .height('100%')
+    .bindSheet(this.showProductSheet, this.productSheet(), { height: 420 })
+    .bindSheet(this.showProcessSheet, this.processSheet(), { height: 420 })
   }
 }
