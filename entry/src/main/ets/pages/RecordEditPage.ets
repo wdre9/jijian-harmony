@@ -14,6 +14,130 @@ interface EditParams {
   id?: string
 }
 
+@CustomDialog
+struct ProductPickerDialog {
+  controller?: CustomDialogController
+  @Link selectedId: string
+  @Link products: Product[]
+  onPick: () => void = () => {
+  }
+
+  build() {
+    Column({ space: 8 }) {
+      Text('选择产品')
+        .fontSize(16)
+        .fontWeight(FontWeight.Medium)
+        .padding({ top: 16, bottom: 8 })
+      if (this.products.length === 0) {
+        Column({ space: 8 }) {
+          Text('暂无产品，请先新增')
+            .fontSize(15)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(Theme.text())
+          Text('返回「产品与工序」页新增产品后，再来记一笔')
+            .fontSize(12)
+            .fontColor(Theme.sub())
+        }
+        .width('100%')
+        .padding({ top: 48, bottom: 48 })
+      } else {
+        List({ space: 4 }) {
+          ForEach(this.products, (p: Product) => {
+            ListItem() {
+              Row({ space: 10 }) {
+                Text(p.name)
+                  .fontSize(15)
+                  .layoutWeight(1)
+                if (p.spec) {
+                  Text(p.spec)
+                    .fontSize(12)
+                    .fontColor(Theme.sub())
+                }
+              }
+              .width('100%')
+              .padding(12)
+              .backgroundColor(this.selectedId === p.id ? Theme.weakBlue() : Theme.card())
+              .borderRadius(8)
+              .onClick(() => {
+                this.selectedId = p.id
+                this.onPick()
+              })
+            }
+          }, (p: Product) => p.id)
+        }
+        .width('100%')
+        .height(360)
+      }
+      Blank().height(12)
+    }
+    .width('92%')
+    .padding(14)
+    .backgroundColor(Theme.card())
+    .borderRadius(16)
+  }
+}
+
+@CustomDialog
+struct ProcessPickerDialog {
+  controller?: CustomDialogController
+  @Link selectedId: string
+  @Link processes: Process[]
+  onPick: () => void = () => {
+  }
+
+  build() {
+    Column({ space: 8 }) {
+      Text('选择工序')
+        .fontSize(16)
+        .fontWeight(FontWeight.Medium)
+        .padding({ top: 16, bottom: 8 })
+      if (this.processes.length === 0) {
+        Column({ space: 8 }) {
+          Text('该产品暂无工序')
+            .fontSize(15)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(Theme.text())
+          Text('可在「产品与工序」页为该产品新增工序，或选择手动输入')
+            .fontSize(12)
+            .fontColor(Theme.sub())
+        }
+        .width('100%')
+        .padding({ top: 48, bottom: 48 })
+      } else {
+        List({ space: 4 }) {
+          ForEach(this.processes, (c: Process) => {
+            ListItem() {
+              Row({ space: 10 }) {
+                Text(c.name)
+                  .fontSize(15)
+                  .layoutWeight(1)
+                Text(money(c.price))
+                  .fontSize(13)
+                  .fontColor(Theme.blue())
+              }
+              .width('100%')
+              .padding(12)
+              .backgroundColor(this.selectedId === c.id ? Theme.weakBlue() : Theme.card())
+              .borderRadius(8)
+              .onClick(() => {
+                this.selectedId = c.id
+                this.onPick()
+              })
+            }
+          }, (c: Process) => c.id)
+        }
+        .width('100%')
+        .height(360)
+      }
+      Blank().height(12)
+    }
+    .width('92%')
+    .padding(14)
+    .backgroundColor(Theme.card())
+    .borderRadius(16)
+  }
+}
+
 @Entry
 @Component
 struct RecordEditPage {
@@ -33,10 +157,33 @@ struct RecordEditPage {
   @State workerText: string = ''
   @State shift: string = 'day'
   @State noteText: string = ''
-  @State showProductSheet: boolean = false
-  @State showProcessSheet: boolean = false
   @State saving: boolean = false
+  /** 选择器弹窗数据快照（打开时刷新，避免复用 controller 后列表陈旧） */
+  @State pickerProducts: Product[] = []
+  @State pickerProcesses: Process[] = []
+  @State selectedPickerProductId: string = ''
+  @State selectedPickerProcessId: string = ''
   private store: AppStore = AppStore.getInstance()
+  private productPickerCtrl: CustomDialogController = new CustomDialogController({
+    builder: ProductPickerDialog({
+      selectedId: $selectedPickerProductId,
+      products: $pickerProducts,
+      onPick: () => { this.doPickProduct() }
+    }),
+    autoCancel: true,
+    customStyle: true,
+    alignment: DialogAlignment.Center
+  })
+  private processPickerCtrl: CustomDialogController = new CustomDialogController({
+    builder: ProcessPickerDialog({
+      selectedId: $selectedPickerProcessId,
+      processes: $pickerProcesses,
+      onPick: () => { this.doPickProcess() }
+    }),
+    autoCancel: true,
+    customStyle: true,
+    alignment: DialogAlignment.Center
+  })
 
   aboutToAppear(): void {
     const params = router.getParams() as EditParams
@@ -103,20 +250,46 @@ struct RecordEditPage {
     }
   }
 
-  private selectProduct(p: Product): void {
+  /** 打开产品选择弹窗：先刷新数据快照再 open（控制器仅初始化一次复用） */
+  private openProductPicker(): void {
+    this.selectedPickerProductId = this.productId
+    this.pickerProducts = this.products()
+    this.productPickerCtrl.open()
+  }
+
+  private doPickProduct(): void {
+    const p: Product | undefined = this.pickerProducts.find((x: Product) => x.id === this.selectedPickerProductId)
+    if (!p) {
+      return
+    }
     this.productId = p.id
     this.processId = ''
     this.processMode = 'existing'
     this.priceText = '0'
-    this.showProductSheet = false
+    this.productPickerCtrl.close()
   }
 
-  private selectProcess(c: Process): void {
+  /** 打开工序选择弹窗：先刷新数据快照再 open */
+  private openProcessPicker(): void {
+    if (!this.productId) {
+      this.toast('请先选择产品')
+      return
+    }
+    this.selectedPickerProcessId = this.processId
+    this.pickerProcesses = this.processesOf()
+    this.processPickerCtrl.open()
+  }
+
+  private doPickProcess(): void {
+    const c: Process | undefined = this.pickerProcesses.find((x: Process) => x.id === this.selectedPickerProcessId)
+    if (!c) {
+      return
+    }
     this.processId = c.id
     this.processMode = 'existing'
     this.customProcessName = ''
     this.priceText = String(c.price)
-    this.showProcessSheet = false
+    this.processPickerCtrl.close()
   }
 
   private currentProcessName(): string {
@@ -247,96 +420,6 @@ struct RecordEditPage {
     .backgroundColor(Theme.card())
   }
 
-  @Builder
-  productSheet() {
-    Column() {
-      Text('选择产品')
-        .fontSize(16)
-        .fontWeight(FontWeight.Medium)
-        .padding({ top: 16, bottom: 8 })
-      if (this.products().length === 0) {
-        Column({ space: 8 }) {
-          Text('暂无产品，请先新增')
-            .fontSize(15)
-            .fontWeight(FontWeight.Medium)
-            .fontColor(Theme.text())
-          Text('返回「产品与工序」页新增产品后，再来记一笔')
-            .fontSize(12)
-            .fontColor(Theme.sub())
-        }
-        .width('100%')
-        .padding({ top: 48, bottom: 48 })
-      } else {
-        List({ space: 4 }) {
-          ForEach(this.products(), (p: Product) => {
-            ListItem() {
-              Row({ space: 10 }) {
-                Text(p.name)
-                  .fontSize(15)
-                  .layoutWeight(1)
-                if (p.spec) {
-                  Text(p.spec)
-                    .fontSize(12)
-                    .fontColor(Theme.sub())
-                }
-              }
-              .width('100%')
-              .padding(12)
-              .backgroundColor(this.productId === p.id ? Theme.weakBlue() : Theme.card())
-              .borderRadius(8)
-              .onClick(() => {
-                this.selectProduct(p)
-              })
-            }
-          }, (p: Product) => p.id)
-        }
-        .width('100%')
-        .layoutWeight(1)
-      }
-    }
-    .width('100%')
-    .height('100%')
-    .padding(12)
-    .backgroundColor(Theme.bg())
-  }
-
-  @Builder
-  processSheet() {
-    Column() {
-      Text('选择工序')
-        .fontSize(16)
-        .fontWeight(FontWeight.Medium)
-        .padding({ top: 16, bottom: 8 })
-      List({ space: 4 }) {
-        ForEach(this.processesOf(), (c: Process) => {
-          ListItem() {
-            Row({ space: 10 }) {
-              Text(c.name)
-                .fontSize(15)
-                .layoutWeight(1)
-              Text(money(c.price))
-                .fontSize(13)
-                .fontColor(Theme.blue())
-            }
-            .width('100%')
-            .padding(12)
-            .backgroundColor(this.processId === c.id ? Theme.weakBlue() : Theme.card())
-            .borderRadius(8)
-            .onClick(() => {
-              this.selectProcess(c)
-            })
-          }
-        }, (c: Process) => c.id)
-      }
-      .width('100%')
-      .layoutWeight(1)
-    }
-    .width('100%')
-    .height('100%')
-    .padding(12)
-    .backgroundColor(Theme.bg())
-  }
-
   build() {
     Column() {
       this.header()
@@ -363,7 +446,7 @@ struct RecordEditPage {
           .backgroundColor(Theme.card())
           .borderRadius(10)
           .onClick(() => {
-            this.showProductSheet = true
+            this.openProductPicker()
           })
 
           // 工序（三态：已有 / 手动输入 / 不填未分类）
@@ -383,7 +466,7 @@ struct RecordEditPage {
                   if (!this.productId) {
                     this.toast('请先选择产品')
                   } else if (!this.processId) {
-                    this.showProcessSheet = true
+                    this.openProcessPicker()
                   }
                 })
               Text('手动输入')
@@ -429,7 +512,7 @@ struct RecordEditPage {
                   this.toast('请先选择产品')
                   return
                 }
-                this.showProcessSheet = true
+                this.openProcessPicker()
               })
             } else if (this.processMode === 'custom') {
               TextInput({ text: this.customProcessName, placeholder: '输入自定义工序名' })
@@ -712,7 +795,5 @@ struct RecordEditPage {
     }
     .width('100%')
     .height('100%')
-    .bindSheet(this.showProductSheet, this.productSheet(), { height: 420 })
-    .bindSheet(this.showProcessSheet, this.processSheet(), { height: 420 })
   }
 }

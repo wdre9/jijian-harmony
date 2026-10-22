@@ -119,6 +119,10 @@ export class AppStore {
   // ---------- 持久化与备份 ----------
 
   private async persist(): Promise<void> {
+    // 全局版本号通知：任何落库/内存变更后 bump，Index 通过 @StorageProp 监听刷新快照，
+    // 不依赖 onPageShow 路由回调，保证从子页返回后各 Tab 计数/列表实时更新
+    const v: number = (AppStorage.get<number>('docVersion') ?? 0) + 1
+    AppStorage.setOrCreate<number>('docVersion', v)
     if (this.ctx === null) {
       return
     }

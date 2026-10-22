@@ -16,6 +16,8 @@ struct Index {
   @State currentTab: number = 0
   @State loading: boolean = true
   @State doc: DataDoc = AppStore.getInstance().doc
+  /** 数据版本号：AppStore 每次落库/变更后 bump，跨组件通知刷新（不依赖路由回调） */
+  @StorageProp('docVersion') @Watch('onDocVersion') docVersion: number = 0
   private store: AppStore = AppStore.getInstance()
 
   aboutToAppear(): void {
@@ -23,6 +25,12 @@ struct Index {
   }
 
   onPageShow(): void {
+    if (this.store.ready) {
+      this.doc = this.store.snapshot()
+    }
+  }
+
+  private onDocVersion(): void {
     if (this.store.ready) {
       this.doc = this.store.snapshot()
     }
